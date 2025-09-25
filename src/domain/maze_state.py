@@ -1,9 +1,26 @@
 import pomdp_py
 
+from src.domain.action import Action
+
+
 class MazeState(pomdp_py.State):
-    def __init__(self, x,y):
+    def __init__(self, x, y, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.x = x
         self.y = y
+
+    def get_next_state(self, action:Action):
+        x, y = self.x, self.y
+        if action.name == Action.UP:
+            y = max(0, y - 1)
+        elif action.name == Action.DOWN:
+            y = min(5 - 1, y + 1)
+        elif action.name == Action.LEFT:
+            x = max(0, x - 1)
+        elif action.name == Action.RIGHT:
+            x = max(5 - 1, x + 1)
+
+        return MazeState(x, y)
 
     def __hash__(self):
         return hash((self.x, self.y))

@@ -1,94 +1,70 @@
 import random
+from typing import Set, Tuple
+
 import pomdp_py
-from models.maze_state import MazeState  # You can rename this to GridState
+
+from src.domain.action import Action
+from src.domain.maze_state import MazeState
+
 
 class TransitionModel(pomdp_py.TransitionModel):
-    def __init__(self, board, move_probabilities=None):
-        """
-        board: instance of your Board class
-        move_probabilities: dict, e.g., {"intended": 0.8, "left_slip": 0.1, "right_slip": 0.1}
-        """
-        self.board = board
-        self.move_probabilities = move_probabilities or {"intended": 0.8, "left_slip": 0.1, "right_slip": 0.1}
-        self.directions = ["up", "down", "left", "right"]
+    def __init__(self, width: int, height: int, noise: float = 0.1):
+        self.grid_width = width
+        self.grid_height = height
 
-    def probability(self, next_state, state, action):
-        """
-        Return P(s' | s, a)
-        """
-        possible_next_states = self._possible_next_states(state, action)
-        total = sum(possible_next_states.values())
-        return possible_next_states.get(next_state.agent_pos, 0) / total if total > 0 else 0
+        self.noise = noise
 
-    def sample(self, state, action):
-        """
-        Sample next state according to stochastic movement
-        """
-        possible_next_states = self._possible_next_states(state, action)
-        positions = list(possible_next_states.keys())
-        probabilities = list(possible_next_states.values())
-        chosen_pos = random.choices(positions, weights=probabilities, k=1)[0]
-        return MazeState(agent_pos=chosen_pos)
+    def probability(self, next_state: MazeState, state: MazeState, action: Action) -> float:
+        intended_next = self._get_next_position(state, action)
 
-    def _possible_next_states(self, state, action):
-        """
-        Compute all possible next positions given stochastic movement
-        Returns dict: {position_tuple: probability}
-        """
-        row, col = state.agent_pos
-        intended_move = self._move_delta(action.direction)
-        candidates = {}
+        if next_state.x == intended_next.x and next_state.y == intended_next.y:
+            return 1.0 - self.noise
 
-        # Intended
-        r, c = row + intended_move[0], col + intended_move[1]
-        if self._is_valid(r, c):
-            candidates[(r, c)] = self.move_probabilities.get("intended", 0.8)
+        adjacent_positions = self._get_adjacent_positions(state)
+
+        if (next_state.x, next_state.y) in adjacent_positions:
+            return self.noise / len(adjacent_positions)
+
+        if next_state.x == state.x and next_state.y == state.y:
+            if intended_next.x == state.x and intended_next.y == state.y:
+                return 1.0 - self.noise
+            else:
+                return self.noise / len(adjacent_positions)
+        return 0.0
+
+    def sample(self, state: MazeState, action: Action):
+        if random.random() < self.noise:
+            adjacent_positions = self._get_adjacent_positions(state)
+
+            if adjacent_positions:
+                x, y = random.choice(list(adjacent_positions))
+                return MazeState(x, y)
+            else:
+                return state
         else:
-            candidates[(row, col)] = self.move_probabilities.get("intended", 0.8)
+            return self._get_next_position(state, action)
 
-        # Left slip (turn left)
-        left_dir = self._turn_left(action.direction)
-        r, c = row + self._move_delta(left_dir)[0], col + self._move_delta(left_dir)[1]
-        if self._is_valid(r, c):
-            candidates[(r, c)] = self.move_probabilities.get("left_slip", 0.1)
-        else:
-            candidates[(row, col)] = self.move_probabilities.get("left_slip", 0.1)
+    def _get_adjacent_positions(self, state: MazeState) -> Set[Tuple[int, int]]:
+        positions = set()
+        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
 
-        # Right slip (turn right)
-        right_dir = self._turn_right(action.direction)
-        r, c = row + self._move_delta(right_dir)[0], col + self._move_delta(right_dir)[1]
-        if self._is_valid(r, c):
-            candidates[(r, c)] = self.move_probabilities.get("right_slip", 0.1)
-        else:
-            candidates[(row, col)] = self.move_probabilities.get("right_slip", 0.1)
+            x, y = state.x + dx, state.y + dy
 
-        return candidates
+            if (0 <= x < self.grid_width
+                    and 0 <= y < self.grid_height):
+                positions.add((x, y))
 
-    def _is_valid(self, row, col):
-        return not self.board.is_out_of_bounds(row, col) and not self.board.hits_wall(row, col)
+        return positions
 
-    def _move_delta(self, direction):
-        if direction == "up":
-            return (-1, 0)
-        elif direction == "down":
-            return (1, 0)
-        elif direction == "left":
-            return (0, -1)
-        elif direction == "right":
-            return (0, 1)
-        return (0, 0)
+    def _get_next_position(self, state: MazeState, action: Action) -> MazeState:
+        x, y = state.x, state.y
+        if action.name == Action.UP:
+            y = max(0, y - 1)
+        elif action.name == Action.DOWN:
+            y = min(self.grid_height - 1, y + 1)
+        elif action.name == Action.LEFT:
+            x = max(0, x - 1)
+        elif action.name == Action.RIGHT:
+            x = max(self.grid_width - 1, x + 1)
 
-    def _turn_left(self, direction):
-        turn_map = {"up": "left", "left": "down", "down": "right", "right": "up"}
-        return turn_map[direction]
-
-    def _turn_right(self, direction):
-        turn_map = {"up": "right", "right": "down", "down": "left", "left": "up"}
-        return turn_map[direction]
-
-    def get_all_states(self):
-        """Needed only if using solvers that enumerate states"""
-        positions = [(r, c) for r in range(self.board.rows) for c in range(self.board.cols)]
-        # optionally filter out walls
-        positions = [pos for pos in positions if not self.board.hits_wall(pos[0], pos[1])]
-        return [MazeState(agent_pos=pos) for pos in positions]
+        return MazeState(x, y)

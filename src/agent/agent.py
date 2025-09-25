@@ -1,0 +1,19 @@
+import pomdp_py
+
+from src.models.observation_model import ObservationModel
+from src.models.policy_model import PolicyModel
+from src.models.reward_model import RewardModel
+from src.models.transition_model import TransitionModel
+
+
+class MazeAgent(pomdp_py.Agent):
+    def __init__(self, init_pos, width, height, goal_pos):
+        init_state = init_pos
+        transition_model = TransitionModel(width, height)
+        observation_model = ObservationModel()
+        reward_model = RewardModel(goal_pos)
+
+        belief = pomdp_py.Histogram({init_state: 1.0})
+        policy_model = PolicyModel()
+
+        super().__init__(belief, policy_model, transition_model, observation_model, reward_model)

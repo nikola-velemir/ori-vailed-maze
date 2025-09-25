@@ -2,10 +2,10 @@ import pomdp_py
 
 
 class Action(pomdp_py.Action):
-    UP = "up",
-    DOWN = "down",
-    LEFT = "left",
-    RIGHT = "right",
+    UP = "up"
+    DOWN = "down"
+    LEFT = "left"
+    RIGHT = "right"
 
     def __init__(self, name: str):
         if name not in [self.UP, self.DOWN, self.LEFT, self.RIGHT]:
