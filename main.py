@@ -1,31 +1,55 @@
 import pomdp_py
 
-from src.agent.belief import inititalize_default_belief_state
+from src.agent.belief import initialize_default_belief_state
+from src.domain.action import Action
 from src.domain.maze_state import MazeState
-from src.domain.observation import Observation
 from src.problem import MazeProblem
 
-grid_height = 5
-grid_width = 5
+grid_height = 6
+grid_width = 6
+goal_state = (0, 0)
+init_true_state = MazeState(5, 5)
+init_belief_state = initialize_default_belief_state(grid_width, grid_height)
 
-init_true_state = MazeState(0, 0)
-init_belief_state = inititalize_default_belief_state(grid_width, grid_height)
+walls = {(0, 1), (1, 1), (2, 1), (3, 1), (4, 1)}
+problem = MazeProblem(goal_state, walls, grid_width, grid_height, init_belief_state, init_true_state)
 
-problem = MazeProblem((4, 4), grid_width, grid_height, init_belief_state, init_true_state)
-
-pouct = pomdp_py.POUCT(max_depth=10, discount_factor=0.95,
-                       planning_time=2, exploration_const=110,
-                       rollout_policy=problem.agent.policy_model)
+planner = pomdp_py.POUCT(max_depth=10, discount_factor=0.95,
+                         exploration_const=110, planning_time=2,
+                         rollout_policy=problem.agent.policy_model)
 finishing_reward = 0
-i=0
+i = 0
+taken_actions = []
+
+
+def print_grid(agent_state, walls, goal_state, width, height):
+    for y in range(height):
+        row = ""
+        for x in range(width):
+            if agent_state.x == x and agent_state.y == y:
+                row += "A "
+            elif goal_state[0] == x and goal_state[1] == y:
+                row += "G "
+            elif (x, y) in walls:
+                row += "# "  # wall
+            else:
+                row += ". "  # empty space
+        print(row)
+    print()
+
+
+print_grid(problem.env.state, walls, goal_state, grid_width, grid_height)
+
 while finishing_reward != 100:
-    action = pouct.plan(problem.agent)
-    print("==== Step %d ====" % (i + 1))
+    action: Action = planner.plan(problem.agent)
+    taken_actions.append(action.name)
+    i += 1
+    print("==== Step %d ====" % i)
     print("True state:", problem.env.state)
     print("Action:", action)
 
     # Sample next state using transition model
-    next_state = problem.transition_model.sample(problem.env.state, action)
+    next_state = MazeState.get_next_state(problem.env.state, action)
     problem.env.apply_transition(next_state)
 
     # Sample observation from next state
@@ -39,14 +63,14 @@ while finishing_reward != 100:
     print("Next state:", next_state)
     print(">> Observation:", real_observation)
 
-
+    print_grid(problem.env.state, walls, goal_state, grid_width, grid_height)
 
     # Update history and planner
     problem.agent.update_history(action, real_observation)
-    pouct.update(problem.agent, action, real_observation)
+    planner.update(problem.agent, action, real_observation)
 
-    if isinstance(pouct, pomdp_py.POUCT):
-        print("Num sims:", pouct.last_num_sims)
+    if isinstance(planner, pomdp_py.POUCT):
+        print("Num sims:", planner.last_num_sims)
 
     # Update belief
     if isinstance(problem.agent.cur_belief, pomdp_py.Histogram):
@@ -59,3 +83,5 @@ while finishing_reward != 100:
         problem.agent.set_belief(new_belief)
 
     finishing_reward = reward
+
+print(taken_actions)

@@ -13,14 +13,16 @@ class MazeProblem(pomdp_py.POMDP):
     """Complete POMDP problem definition for a grid world"""
 
     def __init__(self,
-                 goal_state: Tuple[int, int], grid_width: int = 5, grid_height: int = 5,
+                 goal_state: Tuple[int, int], walls: Set[Tuple[int, int]] = None, grid_width: int = 6,
+                 grid_height: int = 6,
                  init_belief=None, init_true_state: MazeState = None,
                  obs_noise: float = 0.0):
         # ----- Agent -----
         self.current_state = init_true_state
         self.policy_model = PolicyModel()
-        self.transition_model = TransitionModel(grid_width, grid_height)
-        self.observation_model = ObservationModel(grid_width=grid_width, grid_height=grid_height, noise=obs_noise)
+        self.transition_model = TransitionModel(grid_width, grid_height, walls=walls)
+        self.observation_model = ObservationModel(grid_width=grid_width, grid_height=grid_height, walls=walls,
+                                                  noise=obs_noise)
         self.reward_model = RewardModel(goal_state=goal_state)
 
         self.agent: pomdp_py.Agent = pomdp_py.Agent(

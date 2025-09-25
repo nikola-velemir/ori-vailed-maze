@@ -1,6 +1,8 @@
+from __future__ import annotations
 import pomdp_py
-
 from src.domain.action import Action
+
+
 
 
 class MazeState(pomdp_py.State):
@@ -9,16 +11,17 @@ class MazeState(pomdp_py.State):
         self.x = x
         self.y = y
 
-    def get_next_state(self, action:Action):
-        x, y = self.x, self.y
+    @staticmethod
+    def get_next_state(state: MazeState, action: Action):
+        x, y = state.x, state.y
         if action.name == Action.UP:
             y = max(0, y - 1)
         elif action.name == Action.DOWN:
-            y = min(5 - 1, y + 1)
+            y = min(6 - 1, y + 1)
         elif action.name == Action.LEFT:
             x = max(0, x - 1)
         elif action.name == Action.RIGHT:
-            x = max(5 - 1, x + 1)
+            x = max(6 - 1, x + 1)
 
         return MazeState(x, y)
 
