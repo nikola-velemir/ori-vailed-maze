@@ -1,0 +1,52 @@
+{
+  "width": 5,
+  "height": 5,
+  "name": "Full POMDP Example Board",
+  "description": "Holes end episode with heavy penalty, traps give negative reward, goal gives reward, includes observation noise",
+
+  "agent": [0, 0],
+
+  "goal": {
+    "position": [4, 4],
+    "reward": 100,
+    "terminal": true
+  },
+
+  "walls": [
+    [1, 1],
+    [1, 2],
+    [2, 1]
+  ],
+
+  "holes": {
+    "positions": [
+      [3, 2]
+    ],
+    "penalty": -100,
+    "terminal": true
+  },
+
+  "traps": {
+    "positions": [
+      [2, 3]
+    ],
+    "penalty": -50,
+    "terminal": false
+  },
+
+  "rewards": {
+    "step": -1
+  },
+
+  "discount": 0.95,
+
+  "actions": ["up", "down", "left", "right"],
+
+  "move_probabilities": {
+    "intended": 0.8,
+    "left_slip": 0.1,
+    "right_slip": 0.1
+  },
+
+  "observation_noise": 0.1
+}
