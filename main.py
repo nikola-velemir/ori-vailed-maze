@@ -48,31 +48,25 @@ while finishing_reward != 100:
     print("True state:", problem.env.state)
     print("Action:", action)
 
-    # Sample next state using transition model
     next_state = MazeState.get_next_state(problem.env.state, action)
     problem.env.apply_transition(next_state)
 
-    # Sample observation from next state
     real_observation = problem.observation_model.sample(next_state, action)
 
-    # Get reward
     reward = problem.reward_model.sample(problem.env.state, action, next_state)
 
-    # Print results
     print("Reward:", reward)
     print("Next state:", next_state)
     print(">> Observation:", real_observation)
 
     print_grid(problem.env.state, walls, goal_state, grid_width, grid_height)
 
-    # Update history and planner
     problem.agent.update_history(action, real_observation)
     planner.update(problem.agent, action, real_observation)
 
     if isinstance(planner, pomdp_py.POUCT):
         print("Num sims:", planner.last_num_sims)
 
-    # Update belief
     if isinstance(problem.agent.cur_belief, pomdp_py.Histogram):
         new_belief = pomdp_py.update_histogram_belief(
             problem.agent.cur_belief,
