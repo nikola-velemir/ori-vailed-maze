@@ -7,21 +7,24 @@ from src.problem import MazeProblem
 
 grid_height = 6
 grid_width = 6
-goal_state = (0, 0)
-init_true_state = MazeState(5, 5, height=grid_height, width=grid_width)
+goal_state = (5, 0)
+# coins = {(5, 4), (5, 1), (4, 2), (2, 1)}
+coins = set()
+walls = {(0, 1), (1, 1), (2, 1),  (2, 3), (3, 3), (4, 3), (5, 3)}
+# walls = set()
+holes = set()
+# coins = set()
+# traps = {(1, 2), (2, 2), (3, 2)}
+traps = set()
+init_true_state = MazeState(5, 5, height=grid_height, width=grid_width, coins=coins)
 
-traps = {(1, 2), (2, 2), (3, 2)}
 init_belief_state = initialize_particle_belief(grid_width, grid_height, traps)
 
-# walls = {(0, 1), (1, 1), (2, 3), (3, 3), (4, 3), (5, 3)}
-walls = set()
-holes = set()
-coins = {(3, 4), (5, 1), (4, 2), (2, 1)}
 problem = MazeProblem(goal_state, walls, holes, traps, coins,
                       grid_width, grid_height, init_belief_state, init_true_state)
 
-planner = pomdp_py.POMCP(max_depth=10, discount_factor=0.5,
-                         exploration_const=110, planning_time=2,
+planner = pomdp_py.POMCP(max_depth=10, discount_factor=0.9,
+                         exploration_const=50, num_sims=20000,
                          rollout_policy=problem.agent.policy_model)
 finishing_reward = 0
 i = 0
@@ -50,7 +53,7 @@ def print_grid(agent_state, walls, goal_state, width, height):
 
 print_grid(problem.env.state, walls, goal_state, grid_width, grid_height)
 
-while finishing_reward != 100:
+while finishing_reward != 1000:
     action: Action = planner.plan(problem.agent)
     taken_actions.append(action.name)
     i += 1

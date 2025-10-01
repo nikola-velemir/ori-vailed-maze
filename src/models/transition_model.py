@@ -2,6 +2,7 @@ import random
 from typing import Set, Tuple
 
 import pomdp_py
+from sympy.physics.paulialgebra import epsilon
 
 from src.domain.action import Action
 from src.domain.maze_state import MazeState
@@ -11,11 +12,17 @@ class TransitionModel(pomdp_py.TransitionModel):
     def __init__(self,
                  width: int, height: int,
                  walls: Set[Tuple[int, int]] = None,
-                 noise: float = 0.1):
+                 coins: Set[Tuple[int, int]] = None,
+                 noise: float = 0.1,
+                 epsilon: float = 1e-4):
         self.width = width
         self.height = height
+
         self.walls = walls if walls else set()
+        self.coins = coins if coins else set()
+
         self.noise = noise
+        self.epsilon = epsilon
 
     def probability(self, next_state: MazeState, state: MazeState, action: Action) -> float:
         intended_next = self._get_next_position(state, action)
@@ -33,7 +40,7 @@ class TransitionModel(pomdp_py.TransitionModel):
                 return 1.0 - self.noise
             else:
                 return self.noise / len(adjacent_positions)
-        return 0.0
+        return self.epsilon
 
     def sample(self, state: MazeState, action: Action):
         if random.random() < self.noise:
@@ -41,7 +48,7 @@ class TransitionModel(pomdp_py.TransitionModel):
 
             if adjacent_positions:
                 x, y = random.choice(list(adjacent_positions))
-                return MazeState(x, y, height=self.height, width=self.width)
+                return MazeState(x, y, height=self.height, width=self.width, coins=state.coins)
             else:
                 return state
         else:
@@ -78,7 +85,10 @@ class TransitionModel(pomdp_py.TransitionModel):
         cx = max(0, min(cx, self.width - 1))
         cy = max(0, min(cy, self.height - 1))
 
+        new_coins = set(state.coins)
+        if (cx, cy) in new_coins:
+            new_coins.remove((cx, cy))
         if 0 <= cx < self.width and 0 <= cy < self.height and (cx, cy) not in self.walls:
-            return MazeState(cx, cy, height=self.height, width=self.width)
+            return MazeState(cx, cy, height=self.height, width=self.width, coins=new_coins)
 
-        return MazeState(x, y, height=self.height, width=self.width)
+        return MazeState(x, y, height=self.height, width=self.width, coins=new_coins)

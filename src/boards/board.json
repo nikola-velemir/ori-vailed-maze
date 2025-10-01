@@ -40,8 +40,6 @@
 
   "discount": 0.95,
 
-  "actions": ["up", "down", "left", "right"],
-
   "move_probabilities": {
     "intended": 0.8,
     "left_slip": 0.1,

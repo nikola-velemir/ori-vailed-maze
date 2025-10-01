@@ -1,7 +1,7 @@
 BOARD_SCHEMA = {
     "type": "object",
     "required": ["width", "height", "agent", "goal", "walls", "holes", "traps",
-                 "rewards", "discount", "actions", "move_probabilities", "observation_noise"],
+                 "rewards", "discount", "move_probabilities", "observation_noise"],
     "properties": {
         "width": {"type": "integer", "minimum": 1},
         "height": {"type": "integer", "minimum": 1},
@@ -85,12 +85,6 @@ BOARD_SCHEMA = {
         },
 
         "discount": {"type": "number", "minimum": 0, "maximum": 1},
-
-        "actions": {
-            "type": "array",
-            "items": {"type": "string"},
-            "minItems": 1
-        },
 
         "move_probabilities": {
             "type": "object",

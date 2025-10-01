@@ -28,7 +28,7 @@ class MazeState(pomdp_py.State):
         elif action.name == Action.RIGHT:
             x = min(self.width - 1, x + 1)
 
-        return MazeState(x, y, self.width, self.height)
+        return MazeState(x, y, self.width, self.height,coins=self.coins)
 
     def __hash__(self):
         return hash((self.x, self.y, self.width, self.height))
@@ -40,10 +40,11 @@ class MazeState(pomdp_py.State):
                 and self.y == other.y
                 and self.width == other.width
                 and self.height == other.height
+                and self.coins == other.coins
         )
 
     def __str__(self):
         return f"State({self.x}, {self.y})"
 
     def __repr__(self):
-        return self.__str__()
+        return f"State({self.x}, {self.y}, coins={self.coins})"
