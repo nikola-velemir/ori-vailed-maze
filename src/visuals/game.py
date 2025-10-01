@@ -13,12 +13,8 @@ from state import *
 
 # Mapping search strategies
 search_class_map = {
-    "BFS": BreadthFirstSearch,
-    "DFS": DepthFirstSearch,
-    "IDFS": IterativeDepthFirstSearch,
-    "UCS": UniformCostSearch,
-    "GS": GreedySearch,
-    "A*": AStarSearch
+    "POMCP": BreadthFirstSearch,
+    "POUCT": GreedySearch
 }
 
 # Mapping board symbols to colors and icons
@@ -35,7 +31,7 @@ board_to_icons = {
 }
 
 class Game:
-    def __init__(self, board_file = 'board.json', default_search="BFS", cell_size=40):
+    def __init__(self, board_file = 'board.json', default_search="POMCP", cell_size=40):
         self.board_data = BoardParser.parse(board_file_path=board_file)
         self.cell_size = cell_size
 

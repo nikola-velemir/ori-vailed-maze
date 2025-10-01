@@ -7,13 +7,11 @@ from src.models.transition_model import TransitionModel
 
 
 class MazeAgent(pomdp_py.Agent):
-    def __init__(self, init_pos, width, height, goal_pos):
-        init_state = init_pos
-        transition_model = TransitionModel(width, height)
-        observation_model = ObservationModel()
-        reward_model = RewardModel(goal_pos)
+    def __init__(self, init_pos, init_belief, width, height, goal_pos, transition_model, reward_model,
+                 observation_model, policy_model):
+        self.width = width
+        self.height = height
+        self.goal_pos = goal_pos
+        self.init_state = init_pos
 
-        belief = pomdp_py.Histogram({init_state: 1.0})
-        policy_model = PolicyModel()
-
-        super().__init__(belief, policy_model, transition_model, observation_model, reward_model)
+        super().__init__(init_belief, policy_model, transition_model, observation_model, reward_model)

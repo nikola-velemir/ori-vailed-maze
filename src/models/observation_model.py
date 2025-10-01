@@ -1,7 +1,8 @@
 import random
-from typing import Tuple, Set
+from typing import Set, Tuple
 
 import pomdp_py
+from networkx.classes import neighbors
 
 from src.domain.action import Action
 from src.domain.maze_state import MazeState
@@ -9,45 +10,44 @@ from src.domain.observation import Observation
 
 
 class ObservationModel(pomdp_py.ObservationModel):
-    def __init__(self,
-                 grid_width: int,
-                 grid_height: int,
+    def __init__(self, width: int, height: int,
                  walls: Set[Tuple[int, int]] = None,
-                 noise: float = 0.2
-                 ):
-
-        self.grid_width = grid_width
-        self.grid_height = grid_height
-
+                 noise: float = 0.2, epsilon: float = 1e-3):
+        self.width = width
+        self.height = height
         self.walls = walls if walls else set()
         self.noise = noise
-
+        self.epsilon = epsilon
 
     def probability(self, observation: Observation, next_state: MazeState, action: Action) -> float:
-        true_obs = Observation(next_state.x, next_state.y)
-        if observation == true_obs:
+        """Returns the probability of an observation given the next state."""
+        if observation.x == next_state.x and observation.y == next_state.y:
             return 1 - self.noise
-
-        neighbors = []
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                nx, ny = next_state.x + dx, next_state.y + dy
-                if 0 <= nx < self.grid_width and 0 <= ny < self.grid_height:
-                    if (nx, ny) not in self.walls and (nx, ny) != (next_state.x, next_state.y):
-                        neighbors.append((nx, ny))
-
+        neighbors = self._get_valid_neighbors(next_state)
         if (observation.x, observation.y) in neighbors:
-            return self.noise / len(neighbors) if neighbors else 0.0
-
-        return 1e-5
-
+            return  self.noise / len(neighbors) if neighbors else 0.0
+        return self.epsilon
     def sample(self, next_state: MazeState, action: Action) -> Observation:
+        """Sample an observation given the next state."""
         if random.random() < self.noise:
-            while True:
-                x = max(0, min(self.grid_width - 1, next_state.x + random.randint(-1, 1)))
-                y = max(0, min(self.grid_height - 1, next_state.y + random.randint(-1, 1)))
-                if (x, y) not in self.walls:
-                    break
+            neighbors = self._get_valid_neighbors(next_state)
+            if neighbors:
+                x, y = random.choice(neighbors)
+            else:
+                x, y = next_state.x, next_state.y
         else:
             x, y = next_state.x, next_state.y
         return Observation(x, y)
+
+    def _get_valid_neighbors(self, state: MazeState):
+        neighbors = []
+
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                if dx == 0 and dy == 0:
+                    continue
+                nx,ny = state.x + dx, state.y + dy
+                if 0 <= nx < self.width and 0 <= ny < self.height and (nx, ny) not in self.walls:
+                    neighbors.append((nx, ny))
+
+        return neighbors
