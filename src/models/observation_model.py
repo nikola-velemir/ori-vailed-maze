@@ -41,13 +41,10 @@ class ObservationModel(pomdp_py.ObservationModel):
 
     def _get_valid_neighbors(self, state: MazeState):
         neighbors = []
-
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                if dx == 0 and dy == 0:
-                    continue
-                nx,ny = state.x + dx, state.y + dy
-                if 0 <= nx < self.width and 0 <= ny < self.height and (nx, ny) not in self.walls:
-                    neighbors.append((nx, ny))
-
+        # Only 4 cardinal directions: up, down, left, right
+        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+            nx, ny = state.x + dx, state.y + dy
+            if 0 <= nx < self.width and 0 <= ny < self.height and (nx, ny) not in self.walls:
+                neighbors.append((nx, ny))
         return neighbors
+

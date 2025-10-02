@@ -23,8 +23,8 @@ init_belief_state = initialize_particle_belief(grid_width, grid_height, traps)
 problem = MazeProblem(goal_state, walls, holes, traps, coins,
                       grid_width, grid_height, init_belief_state, init_true_state)
 
-planner = pomdp_py.POMCP(max_depth=10, discount_factor=0.9,
-                         exploration_const=50, num_sims=20000,
+planner = pomdp_py.POMCP(max_depth=18, discount_factor=0.75,
+                         exploration_const=60, num_sims=10000,
                          rollout_policy=problem.agent.policy_model)
 finishing_reward = 0
 i = 0
@@ -53,7 +53,7 @@ def print_grid(agent_state, walls, goal_state, width, height):
 
 print_grid(problem.env.state, walls, goal_state, grid_width, grid_height)
 
-while finishing_reward != 1000:
+while finishing_reward != 100:
     action: Action = planner.plan(problem.agent)
     taken_actions.append(action.name)
     i += 1
