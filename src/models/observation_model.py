@@ -12,7 +12,7 @@ from src.domain.observation import Observation
 class ObservationModel(pomdp_py.ObservationModel):
     def __init__(self, width: int, height: int,
                  walls: Set[Tuple[int, int]] = None,
-                 noise: float = 0.9, epsilon: float = 1e-4):
+                 noise: float = 0.2, epsilon: float = 1e-3):
         self.width = width
         self.height = height
         self.walls = walls if walls else set()
@@ -23,26 +23,20 @@ class ObservationModel(pomdp_py.ObservationModel):
         """Returns the probability of an observation given the next state."""
         if observation.x == next_state.x and observation.y == next_state.y:
             return 1 - self.noise
-
         neighbors = self._get_valid_neighbors(next_state)
-
         if (observation.x, observation.y) in neighbors:
-            return  self.noise / len(neighbors) if neighbors else self.epsilon
-
+            return  self.noise / len(neighbors) if neighbors else 0.0
         return self.epsilon
     def sample(self, next_state: MazeState, action: Action) -> Observation:
         """Sample an observation given the next state."""
-        rand = random.random()
-        if rand < 1 - self.noise:
-            x,y = next_state.x, next_state.y
-        else:
-
+        if random.random() < self.noise:
             neighbors = self._get_valid_neighbors(next_state)
             if neighbors:
                 x, y = random.choice(neighbors)
             else:
                 x, y = next_state.x, next_state.y
-
+        else:
+            x, y = next_state.x, next_state.y
         return Observation(x, y)
 
     def _get_valid_neighbors(self, state: MazeState):

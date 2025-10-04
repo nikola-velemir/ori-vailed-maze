@@ -28,6 +28,9 @@ class MazeProblem(pomdp_py.POMDP):
                  grid_height: int = 6,
                  init_belief=None, init_true_state: MazeState = None,
                  obs_noise: float = 0.7):
+        self.height = grid_height
+        self.width = grid_width
+        self.goal = goal_state
         # ----- Agent -----
         self.walls = walls if walls is not None else set()
         self.holes = holes if holes is not None else set()
