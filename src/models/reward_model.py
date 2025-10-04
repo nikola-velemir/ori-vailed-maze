@@ -14,7 +14,7 @@ class RewardModel(pomdp_py.RewardModel):
                  coins: Set[Tuple[int, int]] = None,
                  width: int = None,
                  height: int = None,
-                 goal_reward: float = 100.0,
+                 goal_reward: float = 1000.0,
                  coin_reward: float = 10.0,
                  step_cost: float = -1.0):
         self.goal_state = goal_state

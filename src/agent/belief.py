@@ -12,7 +12,7 @@ def initialize_default_belief_state(grid_height, grid_width, walls=None):
             belief_dict[MazeState(x, y, grid_width, grid_height)] = 1 / (grid_width * grid_height)
     return pomdp_py.Histogram(belief_dict)
 
-def initialize_particle_belief(grid_height, grid_width, walls, n_particles=10000):
+def initialize_particle_belief(grid_height, grid_width, walls, n_particles=100):
     particles = []
     for _ in range(n_particles):
         x = random.randint(0, grid_width-1)
