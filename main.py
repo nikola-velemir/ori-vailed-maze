@@ -1,11 +1,7 @@
-import pomdp_py
-import numpy as np
 from src.agent.belief import *
 from src.domain.action import Action
 from src.domain.maze_state import MazeState
 from src.problem import MazeProblem
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
 
 from src.visuals.heatmap_utils import show_histogram
 
@@ -20,9 +16,9 @@ start_state = (5, 5)
 x, y = start_state
 init_true_state = MazeState(x, y, height=grid_height, width=grid_width, coins=coins)
 
-init_belief_state = initialize_particle_belief(grid_width, grid_height, traps)
+init_belief_state = initialize_default_belief_state(grid_width, grid_height, traps)
 
-problem = MazeProblem("pomcp", goal_state, walls, holes, traps, coins,
+problem = MazeProblem("pouct", goal_state, walls, holes, traps, coins,
                       grid_width, grid_height, init_belief_state, init_true_state)
 
 finishing_reward = 0
@@ -52,11 +48,7 @@ def print_grid(agent_state, walls, goal_state, width, height):
 
 print_grid(problem.env.state, walls, goal_state, grid_width, grid_height)
 
-
-
-
-
-while finishing_reward != 100:
+while (problem.env.cur_state.x, problem.env.cur_state.y) != goal_state:
     action: Action = problem.take_action()
     taken_actions.append(action.name)
     i += 1
@@ -87,7 +79,7 @@ while finishing_reward != 100:
                    problem.walls,
                    problem.traps,
                    problem.coins,
-                   (problem.env.state.x,problem.env.state.y),
+                   (problem.env.state.x, problem.env.state.y),
                    problem.goal)
 
 print(taken_actions)
