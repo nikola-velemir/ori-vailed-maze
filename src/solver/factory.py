@@ -3,9 +3,9 @@ import pomdp_py
 
 class PlannerFactory:
     DEFAULT_CONFIG = {
-        "max_depth": 20,
+        "max_depth": 100,
         "discount_factor": 0.8,
-        "exploration_const": 70,
+        "exploration_const": 80,
         "num_sims": 10000
     }
     @staticmethod

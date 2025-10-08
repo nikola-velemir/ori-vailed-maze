@@ -47,6 +47,7 @@ class MazeProblem(pomdp_py.POMDP):
             walls=walls,
             traps=traps,
             coins=coins,
+            holes=holes,
             height=grid_height,
             width=grid_width)
 

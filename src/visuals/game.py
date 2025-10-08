@@ -1,21 +1,14 @@
-import tkinter as tk
-from tkinter import filedialog
-import tkinter.font as tkFont
 import os
 import sys
 import time
+import tkinter as tk
+import tkinter.font as tkFont
+from copy import deepcopy
+
 from PIL import Image, ImageTk  # pip install --upgrade Pillow
 
-from board import Board
-from search import *
 from src.board_parser.board_parser import BoardParser
 from state import *
-
-# Mapping search strategies
-search_class_map = {
-    "POMCP": BreadthFirstSearch,
-    "POUCT": GreedySearch
-}
 
 # Mapping board symbols to colors and icons
 board_to_colors = {
@@ -30,11 +23,12 @@ board_to_icons = {
     't': 'trap.jpg'
 }
 
+
 class Game:
-    def __init__(self, board_file = 'board.json', default_search="POMCP", cell_size=40):
+    def __init__(self, board_file='board.json', default_search="POMCP", cell_size=40):
         self.board_data = BoardParser.parse(board_file_path=board_file)
         self.cell_size = cell_size
-
+        self.original_board = deepcopy(self.board_data)
         # Load board from JSON dict if provided
         if self.board_data:
             self.board = Board(self.board_data)
@@ -76,27 +70,21 @@ class Game:
         self.search_class_text = tk.StringVar(self.ui)
         self.search_class_text.set(default_search)
 
-        # Buttons and options
-        search_option = tk.OptionMenu(self.ui, self.search_class_text, *search_class_map.keys())
         start_button = tk.Button(self.ui, text='SEARCH', width=10, command=self.do_search)
         restart_button = tk.Button(self.ui, text='RESET', width=10, command=self.reset)
-        clear_button = tk.Button(self.ui, text='CLEAR ALL', width=10, command=self.clear)
         debug_button = tk.Button(self.ui, text='DEBUG', width=10, command=self.debug)
         stat_report = tk.Label(self.root, text='      ', bg='white', justify=tk.LEFT, relief=tk.GROOVE,
                                font=tkFont.Font(weight='bold'))
+        pouct_button = tk.Button(self.ui, text='RUN POMDP', width=10, command=self.run_pomdp_simulation)
+        pouct_button.grid(row=5, column=0, padx=10, pady=10)
 
-        # Grid layout
-        search_option.grid(row=0, column=0, padx=10, pady=10)
         start_button.grid(row=1, column=0, padx=10, pady=10)
-        clear_button.grid(row=2, column=0, padx=10, pady=10)
         restart_button.grid(row=3, column=0, padx=10, pady=10)
         debug_button.grid(row=4, column=0, padx=10, pady=10)
         stat_report.pack(side=tk.RIGHT, expand=tk.NO, fill=tk.NONE)
 
         # Display board
         self.display_board()
-        self.canvas.bind('<Button-1>', self.switch_cell)
-        self.canvas.bind('<Button-2>', self.switch_cell_backwards)
         self.ui.pack(side=tk.RIGHT, expand=tk.YES, fill=tk.BOTH)
         self.canvas.pack(side=tk.TOP, expand=tk.YES, fill=tk.BOTH)
         self.ui2.pack(side=tk.LEFT, expand=tk.YES, fill=tk.BOTH, anchor=tk.W)
@@ -166,16 +154,16 @@ class Game:
         rect = self.get_cell_rectangle(row, col)
         l = tk.Label(self.canvas, text=text)
         l.bind('<Button-1>', lambda event: self.switch_cell(event, row, col))
-        elem_id = self.canvas.create_window(rect[0] + self.cell_size/2,
-                                            rect[1] + self.cell_size/2,
-                                            height=self.cell_size/3,
+        elem_id = self.canvas.create_window(rect[0] + self.cell_size / 2,
+                                            rect[1] + self.cell_size / 2,
+                                            height=self.cell_size / 3,
                                             window=l)
         self.save_elem_id(elem_id, row, col)
         self.save_text_id(elem_id, row, col)
 
     def draw_icon(self, row, col, icon):
         rect = self.get_cell_rectangle(row, col)
-        elem_id = self.canvas.create_image(rect[0]+2, rect[1]+2, image=icon, anchor=tk.NW)
+        elem_id = self.canvas.create_image(rect[0] + 2, rect[1] + 2, image=icon, anchor=tk.NW)
         self.canvas.icons[elem_id] = icon
         self.save_elem_id(elem_id, row, col)
 
@@ -207,21 +195,6 @@ class Game:
             self.grid_text_ids[row][col] = []
             self.board.text[row][col] = ''
 
-    # ---------------- Interaction ----------------
-    def switch_cell(self, event, row=None, col=None):
-        if row is None and col is None:
-            col = event.x // self.cell_size
-            row = event.y // self.cell_size
-        self.board.switch_cell(row, col)
-        self.update_board(row, col)
-
-    def switch_cell_backwards(self, event, row=None, col=None):
-        if row is None and col is None:
-            col = event.x // self.cell_size
-            row = event.y // self.cell_size
-        self.board.switch_cell_backwards(row, col)
-        self.update_board(row, col)
-
     # ---------------- Menu ----------------
     def make_menu(self, win):
         top = tk.Menu(win)
@@ -229,10 +202,6 @@ class Game:
         file_menu = tk.Menu(top)
         file_menu.add_command(label='Quit', command=sys.exit)
         top.add_cascade(label='File', menu=file_menu, underline=0)
-
-    # ---------------- Search ----------------
-    def get_search_class(self):
-        return search_class_map[self.search_class_text.get()]
 
     def do_search(self):
         self.reset()
@@ -244,14 +213,14 @@ class Game:
         end = time.perf_counter()
         self.path = list(map(lambda x: x.position, path)) if path else None
 
-        print('-'*15, 'DONE', '-'*15)
+        print('-' * 15, 'DONE', '-' * 15)
         print('Time: {0:.4f}s'.format(end - start))
         print('Processed nodes:', len(self.processed))
         print('States left:', len(states))
         if path:
             print('Total cost:', path[-1].get_current_cost())
         else:
-            print('-'*15, 'NO SOLUTION', '-'*15)
+            print('-' * 15, 'NO SOLUTION', '-' * 15)
 
         if self.path:
             # Draw solution path
@@ -260,6 +229,9 @@ class Game:
                 text = f"{text},{idx}" if text else str(idx)
                 self.board.text[p[0]][p[1]] = text
                 self.update_board(p[0], p[1])
+
+    def move_icon_xy(self, from_xy, to_xy):
+        self.move_icon((from_xy[1], from_xy[0]), (to_xy[1], to_xy[0]))
 
     # ---------------- Debug ----------------
     def move_icon(self, from_position, to_position, has_box=None):
@@ -294,7 +266,136 @@ class Game:
         self.display_board()
 
     def reset(self):
+        self.load_board_from_dict(self.original_board)
         for row in range(self.rows):
             for col in range(self.cols):
                 self.delete_texts(row, col)
         self.display_board()
+
+    def print_console_grid(self, agent_state, goal_state, walls, traps, coins):
+        """Prints a simple ASCII grid showing agent, goal, and obstacles."""
+        print()
+        for y in range(self.rows):
+            row = ""
+            for x in range(self.cols):
+                if agent_state.x == x and agent_state.y == y:
+                    row += "A "
+                elif goal_state and goal_state[0] == x and goal_state[1] == y:
+                    row += "G "
+                elif (x, y) in walls:
+                    row += "# "
+                elif (x, y) in traps:
+                    row += "T "
+                elif (x, y) in coins:
+                    row += "C "
+                else:
+                    row += ". "
+            print(row)
+        print()
+
+    def run_pomdp_simulation(self):
+        self.reset()
+        """Run a POMDP simulation and visually update the board after each step."""
+        from src.agent.belief import initialize_default_belief_state
+        from src.domain.action import Action
+        from src.domain.maze_state import MazeState
+        from src.problem import MazeProblem
+        from src.visuals.heatmap_utils import show_histogram
+
+        print("\n▶ Starting POMDP simulation...")
+
+        # --- Extract board setup ---
+        grid_height = self.rows
+        grid_width = self.cols
+        r, c = self.board.find_position('g')
+        goal_state = (c, r)
+        r, c = self.board.find_position('a')
+        start_state = (c, r)
+
+        if not goal_state or not start_state:
+            print("❌ Missing agent or goal position on the board.")
+            return
+
+        walls = set((c, r) for r, c in self.board.find_all_positions('w'))
+        holes = set((c, r) for r, c in self.board.find_all_positions('h'))
+        traps = set((c, r) for r, c in self.board.find_all_positions('t'))
+        coins = set()
+
+        # --- Initialize belief + state ---
+        init_belief_state = initialize_default_belief_state(grid_width, grid_height, traps)
+        init_true_state = MazeState(start_state[1], start_state[0],
+                                    height=grid_height, width=grid_width, coins=coins)
+
+        # --- Create POMDP problem ---
+        problem = MazeProblem(
+            planner_name="pouct",
+            goal_state=goal_state,
+            walls=walls,
+            holes=holes,
+            traps=traps,
+            coins=coins,
+            grid_width=grid_width,
+            grid_height=grid_height,
+            init_belief=init_belief_state,
+            init_true_state=init_true_state
+        )
+
+        # --- Simulation setup ---
+        step_count = 0
+        total_reward = 0
+        taken_actions = []
+        max_steps = grid_width * grid_height * 2  # prevent infinite loops
+
+        current_state = problem.env.state
+        self.display_board()
+        self.root.update()
+
+        print("🟢 Initial board:")
+        self.print_console_grid(problem.env.state, goal_state, walls, traps, coins)
+
+        # --- Main loop ---
+        while (current_state.x, current_state.y) != goal_state and step_count < max_steps:
+            step_count += 1
+            action: Action = problem.take_action()
+            taken_actions.append(action.name)
+
+            next_state = MazeState.get_next_state(current_state, action)
+            if (next_state.x, next_state.y) in problem.env.walls:
+                next_state = current_state
+            reward = problem.reward_model.sample(problem.env.state, action, next_state)
+            total_reward += reward
+
+            # --- Move agent icon on GUI ---
+            from_xy = (current_state.x, current_state.y)
+            to_xy = (next_state.x, next_state.y)
+            self.move_icon_xy(from_xy, to_xy)
+            self.root.update()
+            time.sleep(0.2)
+
+            # --- Apply transition + update belief ---
+            problem.env.apply_transition(next_state)
+            obs = problem.observation_model.sample(next_state, action)
+            problem.update_belief(action, obs)
+            current_state = next_state
+
+            print(f"Step {step_count} | Action={action.name} | Reward={reward}")
+            self.print_console_grid(problem.env.state, goal_state, walls, traps, coins)
+
+            # Optional: show histogram of belief
+            show_histogram(step_count,
+                           problem.get_current_belief_state(),
+                           problem.width,
+                           problem.height,
+                           problem.walls,
+                           problem.traps,
+                           problem.coins,
+                           (problem.env.state.x, problem.env.state.y),
+                           problem.goal)
+
+        # --- End simulation ---
+        if (current_state.x, current_state.y) == goal_state:
+            print(f"🏁 Goal reached in {step_count} steps! Total reward: {total_reward}")
+        else:
+            print(f"⚠ Simulation ended (max {max_steps} steps reached).")
+
+        print("Actions taken:", taken_actions)
