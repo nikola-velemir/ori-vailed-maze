@@ -1,7 +1,7 @@
 from src.agent.belief import *
 from src.domain.action import Action
 from src.domain.maze_state import MazeState
-from src.problem import MazeProblem
+from src.problem.problem import MazeProblem
 
 from src.visuals.heatmap_utils import show_histogram
 

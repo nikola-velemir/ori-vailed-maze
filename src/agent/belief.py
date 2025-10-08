@@ -4,11 +4,13 @@ import pomdp_py
 
 from src.domain.maze_state import MazeState
 
+available_planners = {'pomcp', 'pouct', 'po-rollout'}
+
 def initialize_uniform_belief(planner_name:str, grid_height,grid_width):
     _planner_name = planner_name.strip().lower()
-    if planner_name == "pomcp":
+    if _planner_name == "pomcp":
         return initialize_uniform_particle_belief(grid_height,grid_width)
-    elif planner_name == "pouct":
+    elif _planner_name == "pouct":
         return initialize_uniform_histogram_belief(grid_height,grid_width)
     else:
         raise ValueError(f"Unknown planner: {planner_name}")

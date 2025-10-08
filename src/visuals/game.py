@@ -67,11 +67,14 @@ class Game:
             icon = icon.resize((self.cell_size - 2, self.cell_size - 2), Image.LANCZOS)
             self.icons[f] = ImageTk.PhotoImage(icon)
 
-        # Search option
         self.search_class_text = tk.StringVar(self.ui)
-        self.search_class_text.set(default_search)
+        self.search_class_text.set("POUCT")  # default value
 
-        start_button = tk.Button(self.ui, text='SEARCH', width=10, command=self.do_search)
+        planner_options = ["POUCT", "POMCP"]
+        planner_dropdown = tk.OptionMenu(self.ui, self.search_class_text, *planner_options)
+        planner_dropdown.config(width=10)
+        planner_dropdown.grid(row=1, column=0, padx=10, pady=10)
+
         restart_button = tk.Button(self.ui, text='RESET', width=10, command=self.reset)
         debug_button = tk.Button(self.ui, text='DEBUG', width=10, command=self.debug)
         stat_report = tk.Label(self.root, text='      ', bg='white', justify=tk.LEFT, relief=tk.GROOVE,
@@ -79,7 +82,6 @@ class Game:
         pouct_button = tk.Button(self.ui, text='RUN POMDP', width=10, command=self.run_pomdp_simulation)
         pouct_button.grid(row=5, column=0, padx=10, pady=10)
 
-        start_button.grid(row=1, column=0, padx=10, pady=10)
         restart_button.grid(row=3, column=0, padx=10, pady=10)
         debug_button.grid(row=4, column=0, padx=10, pady=10)
         stat_report.pack(side=tk.RIGHT, expand=tk.NO, fill=tk.NONE)
@@ -304,13 +306,13 @@ class Game:
         print()
 
     def run_pomdp_simulation(self):
-        planner_name = "pouct"
+
+        planner_name = self.search_class_text.get()
         self.reset()
         """Run a POMDP simulation and visually update the board after each step."""
-        from src.agent.belief import initialize_uniform_histogram_belief
         from src.domain.action import Action
         from src.domain.maze_state import MazeState
-        from src.problem import MazeProblem
+        from src.problem.problem import MazeProblem
         from src.visuals.heatmap_utils import show_histogram
 
         print("\n▶ Starting POMDP simulation...")
@@ -364,12 +366,23 @@ class Game:
         print("🟢 Initial board:")
         self.print_console_grid(problem.env.state, goal_state, walls, traps, coins)
 
+        if self.show_heatmap_var.get():
+            show_histogram(
+                step_count,
+                problem.get_current_belief_state(),
+                problem.width,
+                problem.height,
+                problem.walls,
+                problem.traps,
+                problem.coins,
+                (problem.env.state.x, problem.env.state.y),
+                problem.goal
+            )
         # --- Main loop ---
         while (current_state.x, current_state.y) != goal_state and step_count < max_steps:
             step_count += 1
             action: Action = problem.take_action()
             taken_actions.append(action.name)
-
             next_state = MazeState.get_next_state(current_state, action)
             if (next_state.x, next_state.y) in problem.env.walls:
                 next_state = current_state
