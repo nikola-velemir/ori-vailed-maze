@@ -7,6 +7,7 @@ from copy import deepcopy
 
 from PIL import Image, ImageTk  # pip install --upgrade Pillow
 
+from src.agent.belief import initialize_uniform_belief
 from src.board_parser.board_parser import BoardParser
 from state import *
 
@@ -88,7 +89,16 @@ class Game:
         self.ui.pack(side=tk.RIGHT, expand=tk.YES, fill=tk.BOTH)
         self.canvas.pack(side=tk.TOP, expand=tk.YES, fill=tk.BOTH)
         self.ui2.pack(side=tk.LEFT, expand=tk.YES, fill=tk.BOTH, anchor=tk.W)
-
+        self.show_heatmap_var = tk.BooleanVar(value=True)
+        heatmap_checkbox = tk.Checkbutton(
+            self.ui,
+            text="Show Heatmap",
+            variable=self.show_heatmap_var,
+            onvalue=True,
+            offvalue=False,
+            bg='white'
+        )
+        heatmap_checkbox.grid(row=6, column=0, padx=10, pady=5)
         self.processed = None
         self.path = None
 
@@ -294,9 +304,10 @@ class Game:
         print()
 
     def run_pomdp_simulation(self):
+        planner_name = "pouct"
         self.reset()
         """Run a POMDP simulation and visually update the board after each step."""
-        from src.agent.belief import initialize_default_belief_state
+        from src.agent.belief import initialize_uniform_histogram_belief
         from src.domain.action import Action
         from src.domain.maze_state import MazeState
         from src.problem import MazeProblem
@@ -322,13 +333,13 @@ class Game:
         coins = set()
 
         # --- Initialize belief + state ---
-        init_belief_state = initialize_default_belief_state(grid_width, grid_height, traps)
+        init_belief_state = initialize_uniform_belief(planner_name,grid_width, grid_height)
         init_true_state = MazeState(start_state[1], start_state[0],
                                     height=grid_height, width=grid_width, coins=coins)
 
         # --- Create POMDP problem ---
         problem = MazeProblem(
-            planner_name="pouct",
+            planner_name=planner_name,
             goal_state=goal_state,
             walls=walls,
             holes=holes,
@@ -382,16 +393,18 @@ class Game:
             self.print_console_grid(problem.env.state, goal_state, walls, traps, coins)
 
             # Optional: show histogram of belief
-            show_histogram(step_count,
-                           problem.get_current_belief_state(),
-                           problem.width,
-                           problem.height,
-                           problem.walls,
-                           problem.traps,
-                           problem.coins,
-                           (problem.env.state.x, problem.env.state.y),
-                           problem.goal)
-
+            if self.show_heatmap_var.get():
+                show_histogram(
+                    step_count,
+                    problem.get_current_belief_state(),
+                    problem.width,
+                    problem.height,
+                    problem.walls,
+                    problem.traps,
+                    problem.coins,
+                    (problem.env.state.x, problem.env.state.y),
+                    problem.goal
+                )
         # --- End simulation ---
         if (current_state.x, current_state.y) == goal_state:
             print(f"🏁 Goal reached in {step_count} steps! Total reward: {total_reward}")

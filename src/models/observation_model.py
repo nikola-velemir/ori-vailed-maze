@@ -2,7 +2,6 @@ import random
 from typing import Set, Tuple
 
 import pomdp_py
-from networkx.classes import neighbors
 
 from src.domain.action import Action
 from src.domain.maze_state import MazeState
@@ -23,10 +22,12 @@ class ObservationModel(pomdp_py.ObservationModel):
         """Returns the probability of an observation given the next state."""
         if observation.x == next_state.x and observation.y == next_state.y:
             return 1 - self.noise
+
         neighbors = self._get_valid_neighbors(next_state)
         if (observation.x, observation.y) in neighbors:
-            return  self.noise / len(neighbors) if neighbors else 0.0
+            return self.noise / len(neighbors) if neighbors else self.epsilon
         return self.epsilon
+
     def sample(self, next_state: MazeState, action: Action) -> Observation:
         """Sample an observation given the next state."""
         if random.random() < self.noise:
@@ -47,4 +48,3 @@ class ObservationModel(pomdp_py.ObservationModel):
             if 0 <= nx < self.width and 0 <= ny < self.height and (nx, ny) not in self.walls:
                 neighbors.append((nx, ny))
         return neighbors
-

@@ -16,7 +16,7 @@ start_state = (5, 5)
 x, y = start_state
 init_true_state = MazeState(x, y, height=grid_height, width=grid_width, coins=coins)
 
-init_belief_state = initialize_default_belief_state(grid_width, grid_height, traps)
+init_belief_state = initialize_uniform_histogram_belief(grid_width, grid_height, traps)
 
 problem = MazeProblem("pouct", goal_state, walls, holes, traps, coins,
                       grid_width, grid_height, init_belief_state, init_true_state)
@@ -57,6 +57,9 @@ while (problem.env.cur_state.x, problem.env.cur_state.y) != goal_state:
     print("Action:", action)
 
     next_state = MazeState.get_next_state(problem.env.state, action)
+    current_state = problem.env.cur_state
+    if (next_state.x, next_state.y) in problem.env.walls:
+        next_state = current_state
     problem.env.apply_transition(next_state)
 
     real_observation = problem.observation_model.sample(next_state, action)

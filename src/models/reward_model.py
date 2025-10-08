@@ -19,8 +19,8 @@ class RewardModel(pomdp_py.RewardModel):
                  coin_reward: float = 10.0,
                  wall_penalty: float = -10.0,
                  trap_penalty: float = -50.0,
-                 hole_penalty=-1000.0,
-                 step_cost: float = -1.0,):
+                 hole_penalty=-100.0,
+                 step_cost: float = -0.25,):
 
         self.hole_penalty = hole_penalty
         self.goal_state = goal_state
@@ -40,6 +40,18 @@ class RewardModel(pomdp_py.RewardModel):
         self.holes = holes
 
     def _reward_func(self, state: MazeState, action: Action, next_state: MazeState) -> float:
+        next_pos = (next_state.x, next_state.y)
+        if next_pos == self.goal_state:
+            return self.goal_reward
+        if self.holes and next_pos in self.holes:
+            return  self.hole_penalty
+        if self.traps and next_pos in self.traps:
+            return self.trap_penalty
+        if next_pos in state.coins and next_pos not in next_state.coins:
+            return self.coin_reward
+        if next_state.x == state.x and next_state.y == state.y:
+            return  self.wall_penalty
+        return  self.step_cost
         if next_state.x == self.goal_state[0] and next_state.y == self.goal_state[1]:
             return self.goal_reward
 

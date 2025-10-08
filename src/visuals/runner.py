@@ -5,7 +5,7 @@ from src.visuals.game import Game
 
 def run_pomdp_simulation(self:Game):
     """Runs a POMDP simulation and visualizes each step."""
-    from src.agent.belief import initialize_default_belief_state
+    from src.agent.belief import initialize_uniform_histogram_belief
     from src.domain.action import Action
     from src.domain.maze_state import MazeState
     from src.problem import MazeProblem
@@ -24,7 +24,7 @@ def run_pomdp_simulation(self:Game):
     coins = set()
 
     # Initialize belief + state
-    init_belief_state = initialize_default_belief_state(grid_width, grid_height, traps)
+    init_belief_state = initialize_uniform_histogram_belief(grid_width, grid_height, traps)
     init_true_state = MazeState(start_state[1], start_state[0], height=grid_height, width=grid_width, coins=coins)
 
     # Create POMDP problem

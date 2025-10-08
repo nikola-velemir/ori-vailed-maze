@@ -1,6 +1,6 @@
 {
-  "width": 6,
-  "height": 6,
+  "width": 8,
+  "height": 8,
   "name": "Full POMDP Example Board",
   "description": "Holes end episode with heavy penalty, traps give negative reward, goal gives reward, includes observation noise",
 
@@ -16,7 +16,8 @@
     [0, 1],
     [1, 2],
     [3,3],
-    [4,3]
+    [4,3],
+    [3,5]
   ],
 
   "holes": {
@@ -28,7 +29,10 @@
 
   "traps": {
     "positions": [
-      [2, 3]
+      [2, 3],
+      [2,4],
+      [1, 3],
+      [1,4]
     ],
     "penalty": -50,
     "terminal": false
