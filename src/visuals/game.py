@@ -9,7 +9,8 @@ from PIL import Image, ImageTk  # pip install --upgrade Pillow
 
 from src.agent.belief import initialize_uniform_belief
 from src.board_parser.board_parser import BoardParser
-from state import *
+from src.utils.metric_utils import calculate_discounted_reward
+from src.visuals.board import Board
 
 # Mapping board symbols to colors and icons
 board_to_colors = {
@@ -62,8 +63,8 @@ class Game:
         # Load icons
         self.canvas.icons = dict()
         self.icons = dict()
-        for f in os.listdir('icons'):
-            icon = Image.open(os.path.join('icons', f))
+        for f in os.listdir('visuals/icons'):
+            icon = Image.open(os.path.join('visuals/icons', f))
             icon = icon.resize((self.cell_size - 2, self.cell_size - 2), Image.LANCZOS)
             self.icons[f] = ImageTk.PhotoImage(icon)
 
@@ -215,32 +216,33 @@ class Game:
         file_menu.add_command(label='Quit', command=sys.exit)
         top.add_cascade(label='File', menu=file_menu, underline=0)
 
-    def do_search(self):
-        self.reset()
-        search_class = self.get_search_class()
-        search = search_class(self.board)
-        initial_state = RobotState
-        start = time.perf_counter()
-        path, self.processed, states = search.search(initial_state)
-        end = time.perf_counter()
-        self.path = list(map(lambda x: x.position, path)) if path else None
-
-        print('-' * 15, 'DONE', '-' * 15)
-        print('Time: {0:.4f}s'.format(end - start))
-        print('Processed nodes:', len(self.processed))
-        print('States left:', len(states))
-        if path:
-            print('Total cost:', path[-1].get_current_cost())
-        else:
-            print('-' * 15, 'NO SOLUTION', '-' * 15)
-
-        if self.path:
-            # Draw solution path
-            for idx, p in enumerate(self.path):
-                text = self.board.text[p[0]][p[1]]
-                text = f"{text},{idx}" if text else str(idx)
-                self.board.text[p[0]][p[1]] = text
-                self.update_board(p[0], p[1])
+    #
+    # def do_search(self):
+    #     self.reset()
+    #     search_class = self.get_search_class()
+    #     search = search_class(self.board)
+    #     initial_state = RobotState
+    #     start = time.perf_counter()
+    #     path, self.processed, states = search.search(initial_state)
+    #     end = time.perf_counter()
+    #     self.path = list(map(lambda x: x.position, path)) if path else None
+    #
+    #     print('-' * 15, 'DONE', '-' * 15)
+    #     print('Time: {0:.4f}s'.format(end - start))
+    #     print('Processed nodes:', len(self.processed))
+    #     print('States left:', len(states))
+    #     if path:
+    #         print('Total cost:', path[-1].get_current_cost())
+    #     else:
+    #         print('-' * 15, 'NO SOLUTION', '-' * 15)
+    #
+    #     if self.path:
+    #         # Draw solution path
+    #         for idx, p in enumerate(self.path):
+    #             text = self.board.text[p[0]][p[1]]
+    #             text = f"{text},{idx}" if text else str(idx)
+    #             self.board.text[p[0]][p[1]] = text
+    #             self.update_board(p[0], p[1])
 
     def move_icon_xy(self, from_xy, to_xy):
         self.move_icon((from_xy[1], from_xy[0]), (to_xy[1], to_xy[0]))
@@ -306,7 +308,7 @@ class Game:
         print()
 
     def run_pomdp_simulation(self):
-
+        rewards = []
         planner_name = self.search_class_text.get()
         self.reset()
         """Run a POMDP simulation and visually update the board after each step."""
@@ -335,7 +337,7 @@ class Game:
         coins = set()
 
         # --- Initialize belief + state ---
-        init_belief_state = initialize_uniform_belief(planner_name,grid_width, grid_height)
+        init_belief_state = initialize_uniform_belief(planner_name, grid_width, grid_height)
         init_true_state = MazeState(start_state[1], start_state[0],
                                     height=grid_height, width=grid_width, coins=coins)
 
@@ -388,6 +390,7 @@ class Game:
                 next_state = current_state
             reward = problem.reward_model.sample(problem.env.state, action, next_state)
             total_reward += reward
+            rewards.append(reward)
 
             # --- Move agent icon on GUI ---
             from_xy = (current_state.x, current_state.y)
@@ -420,8 +423,12 @@ class Game:
                 )
         # --- End simulation ---
         if (current_state.x, current_state.y) == goal_state:
-            print(f"🏁 Goal reached in {step_count} steps! Total reward: {total_reward}")
+            discounted_total = calculate_discounted_reward(rewards)
+            print(f"🏁 Goal reached in {step_count} steps!")
+            print(f"Total reward sum: {total_reward}")
+            print(f"Discounted total reward: {discounted_total}")
         else:
             print(f"⚠ Simulation ended (max {max_steps} steps reached).")
 
+        print(f"Number of actions taken: {len(taken_actions)}")
         print("Actions taken:", taken_actions)
