@@ -35,7 +35,6 @@ class BetterObservationModel(pomdp_py.ObservationModel):
     def sample(self, next_state: MazeState, action: Action) -> BetterObservation:
         """Sample observation with both position and directional sensing"""
 
-        # 1. Sample noisy position (as before)
         if random.random() < self.position_noise:
             neighbors = self._get_valid_neighbors(next_state)
             if neighbors:
@@ -45,14 +44,11 @@ class BetterObservationModel(pomdp_py.ObservationModel):
         else:
             x, y = next_state.x, next_state.y
 
-        # 2. Sample what agent senses in each direction
         sensed = {}
         for dir_name, (dx, dy) in self.directions.items():
             true_content = self._sense_direction(next_state, dx, dy)
 
-            # Add sensor noise
             if random.random() < self.sensor_noise:
-                # Occasionally report wrong information
                 sensed[dir_name] = random.choice(['clear', 'wall', 'trap'])
             else:
                 sensed[dir_name] = true_content
