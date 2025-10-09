@@ -76,18 +76,18 @@ class Board:
 
         # Place agent - (y, x)
         agent_data = data_dict.get("agent", (0, 0))
-        ay, ax = tuple(agent_data) if isinstance(agent_data, (list, tuple)) else (0, 0)
+        self.agent = tuple(agent_data) if isinstance(agent_data, (list, tuple)) else (0, 0)
+        ax, ay = self.agent
         self.data[ay][ax] = 'a'
-        self.agent = (ay, ax)
 
         # Place goal - (y, x)
         goal_data = data_dict.get("goal", (self.rows - 1, self.cols - 1))
         if isinstance(goal_data, dict):
-            gy, gx = tuple(goal_data["position"])
+            self.goal = tuple(goal_data["position"])
         else:
-            gy, gx = tuple(goal_data)
+            self.goal = tuple(goal_data)
+        gx, gy = self.goal
         self.data[gy][gx] = 'g'
-        self.goal = (gy, gx)
 
         # Place walls - (y, x)
         for x, y in self.walls:

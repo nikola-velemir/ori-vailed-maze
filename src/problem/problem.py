@@ -49,7 +49,7 @@ class MazeProblem(pomdp_py.POMDP):
         self.observation_model = ObservationModel(width=grid_width, height=grid_height, walls=walls,
                                                   traps=traps, goal=goal_state,
                                                   sensor_noise=observation_noises['sensor_noise'],
-                                                  position_noise=observation_noises['position_noise'])
+                                                  sensor_failure=observation_noises['sensor_failure'])
         self.reward_model = RewardModel(
             goal_state=goal_state,
             walls=walls,

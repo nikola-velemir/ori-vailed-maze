@@ -366,7 +366,7 @@ class Game:
         grid_width = self.cols
         r, c = self.board.find_position('g')
         goal_state = (c, r)
-        r, c = self.board.find_position('a')
+        c, r = self.board.find_position('a')
         start_state = (c, r)
 
         if not goal_state or not start_state:

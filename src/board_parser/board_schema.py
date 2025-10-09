@@ -105,10 +105,10 @@ BOARD_SCHEMA = {
 
         "observation_noise": {
             "type": "object",
-            "required": ["sensor_noise", "position_noise"],
+            "required": ["sensor_noise", "sensor_failure"],
             "properties": {
                 "sensor_noise": {"type": "number", "minimum": 0, "maximum": 1},
-                "position_noise": {"type": "number", "minimum": 0, "maximum": 1},
+                "sensor_failure": {"type": "number", "minimum": 0, "maximum": 1},
             },
         },
         "solver": {
