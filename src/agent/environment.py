@@ -2,7 +2,6 @@ from typing import Tuple, Set
 
 import pomdp_py
 
-from src.domain.better_observation_model import BetterObservationModel
 from src.models.observation_model import ObservationModel
 from src.models.reward_model import RewardModel
 from src.models.transition_model import TransitionModel
@@ -18,7 +17,7 @@ class MazeEnvironment(pomdp_py.Environment):
                  holes: Set[Tuple[int, int]],
                  goal_state: Tuple[int, int],
                  transition_model: TransitionModel,
-                 observation_model: BetterObservationModel,
+                 observation_model: ObservationModel,
                  reward_model: RewardModel,
                  noise: float = 0.15):
         self.width = width

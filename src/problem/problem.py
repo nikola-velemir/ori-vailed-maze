@@ -6,9 +6,8 @@ from pomdp_py.representations.distribution.histogram import Histogram
 
 from src.agent.agent import MazeAgent
 from src.agent.environment import MazeEnvironment
-from src.domain.better_observation_model import BetterObservationModel
-from src.domain.maze_state import MazeState
 from src.models.observation_model import ObservationModel
+from src.domain.maze_state import MazeState
 from src.models.reward_model import RewardModel
 from src.models.transition_model import TransitionModel
 from src.models.policy_model import PolicyModel  # assuming you have this
@@ -47,10 +46,10 @@ class MazeProblem(pomdp_py.POMDP):
         self.policy_model = PolicyModel()
         self.transition_model = TransitionModel(grid_width, grid_height, walls=walls,
                                                 move_probabilities=move_probabilities)
-        self.observation_model = BetterObservationModel(width=grid_width, height=grid_height, walls=walls,
-                                                        traps=traps, goal=goal_state,
-                                                        sensor_noise=observation_noises['sensor_noise'],
-                                                        position_noise=observation_noises['position_noise'])
+        self.observation_model = ObservationModel(width=grid_width, height=grid_height, walls=walls,
+                                                  traps=traps, goal=goal_state,
+                                                  sensor_noise=observation_noises['sensor_noise'],
+                                                  position_noise=observation_noises['position_noise'])
         self.reward_model = RewardModel(
             goal_state=goal_state,
             walls=walls,
