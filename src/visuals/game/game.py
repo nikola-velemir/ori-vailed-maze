@@ -14,6 +14,7 @@ from src.board_parser.board_parser import BoardParser
 from src.utils.metric_utils import calculate_discounted_reward, calculate_total_sum_reward
 from src.visuals.game.board import Board
 from src.visuals.heatmap.heatmap_manager import HeatmapManager
+from src.visuals.heatmap.heatmap_window import TkinterHeatmapWindow
 
 # Mapping board symbols to colors and icons
 board_to_colors = {
@@ -415,21 +416,18 @@ class Game:
 
         print("🟢 Initial board:")
         self.print_console_grid(problem.env.state, goal_state, walls, traps, coins)
-
+        heatmap_window = TkinterHeatmapWindow(
+            grid_width=problem.width,
+            grid_height=problem.height,
+            walls=problem.walls,
+            traps=problem.traps,
+            coins=problem.coins,  # or empty set() if none
+            goal_position=problem.goal
+        )
         if self.show_heatmap_var.get():
+            heatmap_window.update(step_count, problem.get_current_belief_state(),
+                                  (problem.env.state.x, problem.env.state.y))
 
-
-            show_histogram(
-                step_count,
-                problem.get_current_belief_state(),
-                problem.width,
-                problem.height,
-                problem.walls,
-                problem.traps,
-                problem.coins,
-                (problem.env.state.x, problem.env.state.y),
-                problem.goal
-            )
         # --- Main loop ---
         while (current_state.x, current_state.y) != goal_state and step_count < max_steps:
             step_count += 1
@@ -457,19 +455,11 @@ class Game:
             print(f"Step {step_count} | Action={action.name} | Reward={reward}")
             self.print_console_grid(problem.env.state, goal_state, walls, traps, coins)
 
+
             # Optional: show histogram of belief
             if self.show_heatmap_var.get():
-                show_histogram(
-                    step_count,
-                    problem.get_current_belief_state(),
-                    problem.width,
-                    problem.height,
-                    problem.walls,
-                    problem.traps,
-                    problem.coins,
-                    (problem.env.state.x, problem.env.state.y),
-                    problem.goal
-                )
+                heatmap_window.update(step_count, problem.get_current_belief_state(),(problem.env.state.x, problem.env.state.y))
+
         # --- End simulation ---
         if (current_state.x, current_state.y) == goal_state:
             discounted_total = calculate_discounted_reward(rewards,self.gamma)
