@@ -1,31 +1,26 @@
-import pomdp_py
-
 from src.agent.belief import *
 from src.domain.action import Action
 from src.domain.maze_state import MazeState
-from src.problem import MazeProblem
+from src.problem.problem import MazeProblem
+
+from src.visuals.heatmap_utils import show_histogram
 
 grid_height = 6
 grid_width = 6
-goal_state = (5, 0)
-# coins = {(5, 4), (5, 1), (4, 2), (2, 1)}
+goal_state = (1, 0)
 coins = set()
-walls = {(0, 1), (1, 1), (2, 1),  (2, 3), (3, 3), (4, 3), (5, 3)}
-# walls = set()
+walls = {(0, 1), (1, 1), (2, 1), (3, 3), (4, 3), (5, 3)}
 holes = set()
-# coins = set()
-# traps = {(1, 2), (2, 2), (3, 2)}
 traps = set()
-init_true_state = MazeState(5, 5, height=grid_height, width=grid_width, coins=coins)
+start_state = (5, 5)
+x, y = start_state
+init_true_state = MazeState(x, y, height=grid_height, width=grid_width, coins=coins)
 
-init_belief_state = initialize_particle_belief(grid_width, grid_height, traps)
+init_belief_state = initialize_uniform_histogram_belief(grid_width, grid_height, traps)
 
-problem = MazeProblem(goal_state, walls, holes, traps, coins,
+problem = MazeProblem("pouct", goal_state, walls, holes, traps, coins,
                       grid_width, grid_height, init_belief_state, init_true_state)
 
-planner = pomdp_py.POMCP(max_depth=10, discount_factor=0.9,
-                         exploration_const=50, num_sims=20000,
-                         rollout_policy=problem.agent.policy_model)
 finishing_reward = 0
 i = 0
 taken_actions = []
@@ -40,21 +35,21 @@ def print_grid(agent_state, walls, goal_state, width, height):
             elif goal_state[0] == x and goal_state[1] == y:
                 row += "G "
             elif (x, y) in walls:
-                row += "# "  # wall
+                row += "# "
             elif (x, y) in traps:
                 row += 'T '
             elif (x, y) in coins:
                 row += 'C '
             else:
-                row += ". "  # empty space
+                row += ". "
         print(row)
     print()
 
 
 print_grid(problem.env.state, walls, goal_state, grid_width, grid_height)
 
-while finishing_reward != 1000:
-    action: Action = planner.plan(problem.agent)
+while (problem.env.cur_state.x, problem.env.cur_state.y) != goal_state:
+    action: Action = problem.take_action()
     taken_actions.append(action.name)
     i += 1
     print("==== Step %d ====" % i)
@@ -62,6 +57,9 @@ while finishing_reward != 1000:
     print("Action:", action)
 
     next_state = MazeState.get_next_state(problem.env.state, action)
+    current_state = problem.env.cur_state
+    if (next_state.x, next_state.y) in problem.env.walls:
+        next_state = current_state
     problem.env.apply_transition(next_state)
 
     real_observation = problem.observation_model.sample(next_state, action)
@@ -74,21 +72,17 @@ while finishing_reward != 1000:
 
     print_grid(problem.env.state, walls, goal_state, grid_width, grid_height)
 
-    problem.agent.update_history(action, real_observation)
-    planner.update(problem.agent, action, real_observation)
-
-    if isinstance(planner, pomdp_py.POMCP):
-        print("Num sims:", planner.last_num_sims)
-
-    # if isinstance(problem.agent.cur_belief, pomdp_py.Histogram):
-    #     new_belief = pomdp_py.update_histogram_belief(
-    #         problem.agent.cur_belief,
-    #         action, real_observation,
-    #         problem.agent.observation_model,
-    #         problem.agent.transition_model
-    #     )
-    #     problem.agent.set_belief(new_belief)
+    problem.update_belief(action, real_observation)
 
     finishing_reward = reward
+    show_histogram(i,
+                   problem.get_current_belief_state(),
+                   problem.width,
+                   problem.height,
+                   problem.walls,
+                   problem.traps,
+                   problem.coins,
+                   (problem.env.state.x, problem.env.state.y),
+                   problem.goal)
 
 print(taken_actions)

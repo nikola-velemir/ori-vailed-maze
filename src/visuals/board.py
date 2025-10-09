@@ -1,13 +1,52 @@
+import tkinter as tk
+from tkinter import filedialog
+import tkinter.font as tkFont
+import os
+import sys
+import time
+from PIL import Image, ImageTk
+
+# Mapping board symbols to colors and icons
+board_to_colors = {
+    '.': 'white',
+    'w': 'darkgray',
+}
+
+board_to_icons = {
+    'a': 'agent.png',
+    'g': 'goal.png',
+    'h': 'hole.png',
+    't': 'trap.jpg'
+}
+
+
 class Board:
     """
     Class that implements a game board using a JSON-like dictionary.
     Supports agent, goal, walls, holes, traps, and POMDP rewards.
+    NOTE: Board uses (y, x) indexing where y=row, x=col
     """
 
-    def __init__(self, data_dict=None):
-        self.elems = ['.', 'w', 'a', 'g', 'h', 't']  # free, wall, agent, goal, hole, trap
+    def __init__(self, data_dict=None, rows=None, cols=None):
+        self.elems = ['.', 'w', 'a', 'g', 'h', 't']
+
         if data_dict:
             self.load_from_dict(data_dict)
+        elif rows and cols:
+            self.rows = rows
+            self.cols = cols
+            self.data = [['.'] * self.cols for _ in range(self.rows)]
+            self.text = [[''] * self.cols for _ in range(self.rows)]
+            self.holes = []
+            self.traps = []
+            self.walls = []
+            self.agent = (0, 0)  # (y, x)
+            self.goal = (rows - 1, cols - 1)  # (y, x)
+            self.rewards = {"step": -1, "goal": 100}
+            self.discount = 0.95
+            self.observation_noise = 0.0
+            self.data[0][0] = 'a'
+            self.data[rows - 1][cols - 1] = 'g'
         else:
             self.rows = 0
             self.cols = 0
@@ -22,52 +61,58 @@ class Board:
             self.discount = 0.95
             self.observation_noise = 0.0
 
-
     def load_from_dict(self, data_dict):
-        """
-        Load board from a JSON dictionary.
-        Expected keys: width, height, agent, goal, walls, holes, traps
-        """
+        """Load board from a JSON dictionary."""
         self.rows = data_dict["height"]
         self.cols = data_dict["width"]
         self.data = [['.'] * self.cols for _ in range(self.rows)]
         self.text = [[''] * self.cols for _ in range(self.rows)]
 
-        # Rewards and discount
         self.rewards = data_dict.get("rewards", {"step": -1, "goal": 100})
         self.discount = data_dict.get("discount", 0.95)
         self.observation_noise = data_dict.get("observation_noise", 0.0)
-        self.walls = [tuple(pos) for pos in data_dict.get("walls", [])]
+        wall_dict = data_dict.get("walls", {})
+        self.walls = [tuple(pos[::-1]) for pos in wall_dict.get("positions", [])]
 
-        # Place agent
-        ar, ac = tuple(data_dict.get("agent", (0, 0)))
-        self.data[ar][ac] = 'a'
-        self.agent = (ar, ac)
+        # Place agent - (y, x)
+        agent_data = data_dict.get("agent", (0, 0))
+        ay, ax = tuple(agent_data) if isinstance(agent_data, (list, tuple)) else (0, 0)
+        self.data[ay][ax] = 'a'
+        self.agent = (ay, ax)
 
-        # Place goal
-        goal_data = data_dict.get("goal", {"position": (self.rows-1, self.cols-1), "reward": 100, "terminal": True})
-        gr, gc = tuple(goal_data["position"])
-        self.data[gr][gc] = 'g'
-        self.goal = (gr, gc)
+        # Place goal - (y, x)
+        goal_data = data_dict.get("goal", (self.rows - 1, self.cols - 1))
+        if isinstance(goal_data, dict):
+            gy, gx = tuple(goal_data["position"])
+        else:
+            gy, gx = tuple(goal_data)
+        self.data[gy][gx] = 'g'
+        self.goal = (gy, gx)
 
-        # Place walls
-        for r, c in data_dict.get("walls", []):
-            self.data[r][c] = 'w'
+        # Place walls - (y, x)
+        for x, y in self.walls:
+            self.data[x][y] = 'w'
 
-        # Place holes
-        self.holes = [tuple(pos) for pos in data_dict.get("holes", {}).get("positions", [])]
-        for r, c in self.holes:
-            self.data[r][c] = 'h'
+        # Place holes - (y, x)
+        holes_data = data_dict.get("holes", [])
+        if isinstance(holes_data, dict):
+            self.holes = [tuple(pos[::-1]) for pos in holes_data.get("positions", [])]
+        else:
+            self.holes = [tuple(pos[::-1]) for pos in holes_data]
+        for y, x in self.holes:
+            self.data[y][x] = 'h'
 
-        # Place traps
-        self.traps = [tuple(pos) for pos in data_dict.get("traps", {}).get("positions", [])]
-        for r, c in self.traps:
-            self.data[r][c] = 't'
+        # Place traps - (y, x)
+        traps_data = data_dict.get("traps", [])
+        if isinstance(traps_data, dict):
+            self.traps = [tuple(pos[::-1]) for pos in traps_data.get("positions", [])]
+        else:
+            self.traps = [tuple(pos[::-1]) for pos in traps_data]
+        for y, x in self.traps:
+            self.data[y][x] = 't'
 
     def to_dict(self):
-        """
-        Return a JSON-like dictionary representing the current board models.
-        """
+        """Return a JSON-like dictionary representing the current board."""
         return {
             "width": self.cols,
             "height": self.rows,
@@ -100,18 +145,23 @@ class Board:
                 self.text[row][col] = ''
 
     def find_position(self, element):
-        for row in range(self.rows):
-            for col in range(self.cols):
-                if self.data[row][col] == element:
-                    return (row, col)
+        """Find first occurrence of element. Returns (y, x) where y=row, x=col."""
+        for x in range(self.rows):
+            for y in range(self.cols):
+                cell = self.data[y][x]
+                if ',' in cell:
+                    cell = cell.split(',')[1]
+                if cell == element:
+                    return (y, x)
         return None
 
     def find_all_positions(self, element):
+        """Find all occurrences of element. Returns list of (y, x) where y=row, x=col."""
         positions = []
-        for row in range(self.rows):
-            for col in range(self.cols):
-                if self.data[row][col] == element:
-                    positions.append((row, col))
+        for y in range(self.rows):
+            for x in range(self.cols):
+                if self.data[y][x] == element:
+                    positions.append((y, x))
         return positions
 
     def is_out_of_bounds(self, row, col):
