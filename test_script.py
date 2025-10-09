@@ -3,7 +3,7 @@ from src.domain.action import Action
 from src.domain.maze_state import MazeState
 from src.problem.problem import MazeProblem
 
-from src.visuals.heatmap_utils import show_histogram
+from src.visuals.heatmap.heatmap_utils import show_histogram
 
 grid_height = 6
 grid_width = 6

@@ -6,12 +6,14 @@ import tkinter.font as tkFont
 from copy import deepcopy
 from tkinter import filedialog
 
+import matplotlib.pyplot as plt
 from PIL import Image, ImageTk  # pip install --upgrade Pillow
 
 from src.agent.belief import initialize_uniform_belief
 from src.board_parser.board_parser import BoardParser
 from src.utils.metric_utils import calculate_discounted_reward, calculate_total_sum_reward
-from src.visuals.board import Board
+from src.visuals.game.board import Board
+from src.visuals.heatmap.heatmap_manager import HeatmapManager
 
 # Mapping board symbols to colors and icons
 board_to_colors = {
@@ -357,7 +359,7 @@ class Game:
         from src.domain.action import Action
         from src.domain.maze_state import MazeState
         from src.problem.problem import MazeProblem
-        from src.visuals.heatmap_utils import show_histogram
+        from src.visuals.heatmap.heatmap_utils import show_histogram
 
         print("\n▶ Starting POMDP simulation...")
 
@@ -415,6 +417,8 @@ class Game:
         self.print_console_grid(problem.env.state, goal_state, walls, traps, coins)
 
         if self.show_heatmap_var.get():
+
+
             show_histogram(
                 step_count,
                 problem.get_current_belief_state(),
@@ -478,6 +482,9 @@ class Game:
 
         print(f"Number of actions taken: {len(taken_actions)}")
         print("Actions taken:", taken_actions)
+        plt.close('all')
+        plt.clf()
+        plt.cla()
 
     def get_rewards(self):
         data = self.board_data

@@ -1,4 +1,4 @@
-from src.visuals.game import Game
+from src.visuals.game.game import Game
 
 if __name__ == '__main__':
     game = Game(board_file='boards/board.json', cell_size=100)

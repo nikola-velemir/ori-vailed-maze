@@ -1,6 +1,6 @@
 import time
 
-from src.visuals.game import Game
+from src.visuals.game.game import Game
 
 
 def run_pomdp_simulation(self:Game):
@@ -9,7 +9,7 @@ def run_pomdp_simulation(self:Game):
     from src.domain.action import Action
     from src.domain.maze_state import MazeState
     from src.problem.problem import MazeProblem
-    from src.visuals.heatmap_utils import show_histogram
+    from src.visuals.heatmap.heatmap_utils import show_histogram
 
     # Extract board info
     grid_height = self.rows
