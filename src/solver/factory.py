@@ -13,6 +13,7 @@ class PlannerFactory:
         config = {**PlannerFactory.DEFAULT_CONFIG,**kwargs}
         config.setdefault("rollout_policy",agent.policy_model)
         _name = name.strip().lower()
+        print(config)
         planner_classes = {
             "pomcp": pomdp_py.POMCP,
             "pouct": pomdp_py.POUCT

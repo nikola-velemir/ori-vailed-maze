@@ -4,12 +4,13 @@ import time
 import tkinter as tk
 import tkinter.font as tkFont
 from copy import deepcopy
+from tkinter import filedialog
 
 from PIL import Image, ImageTk  # pip install --upgrade Pillow
 
 from src.agent.belief import initialize_uniform_belief
 from src.board_parser.board_parser import BoardParser
-from src.utils.metric_utils import calculate_discounted_reward
+from src.utils.metric_utils import calculate_discounted_reward, calculate_total_sum_reward
 from src.visuals.board import Board
 
 # Mapping board symbols to colors and icons
@@ -20,7 +21,7 @@ board_to_colors = {
 
 board_to_icons = {
     'a': 'agent.png',
-    'g': 'goal.png',
+    'g': 'goal.jpg',
     'h': 'hole.png',
     't': 'trap.jpg'
 }
@@ -29,6 +30,9 @@ board_to_icons = {
 class Game:
     def __init__(self, board_file='board.json', default_search="POMCP", cell_size=40):
         self.board_data = BoardParser.parse(board_file_path=board_file)
+        self.solver_config = self.board_data['solver_config']
+        self.gamma = self.solver_config['discount_factor']
+        print(self.board_data)
         self.cell_size = cell_size
         self.original_board = deepcopy(self.board_data)
         # Load board from JSON dict if provided
@@ -125,6 +129,51 @@ class Game:
         """Return JSON dict representing the current board models"""
         return self.board.to_dict()
 
+    def open_file(self):
+        """Open a file dialog to select a board JSON file"""
+        filename = filedialog.askopenfilename(
+            title="Select a board file",
+            filetypes=(
+                ("JSON files", "*.json"),
+                ("All files", "*.*")
+            ),
+            initialdir="."  # Start in current directory
+        )
+
+        if filename:  # If user selected a file (didn't cancel)
+            try:
+                # Parse the new board file
+                self.board_data = BoardParser.parse(board_file_path=filename)
+                self.solver_config = self.board_data['solver_config']
+                self.gamma = self.solver_config['discount_factor']
+                self.original_board = deepcopy(self.board_data)
+
+                # Reload the board
+                self.load_board_from_dict(self.board_data)
+                print(f"✓ Successfully loaded: {filename}")
+                print(self.board_data)
+
+            except Exception as e:
+                print(f"❌ Error loading file: {e}")
+                # Optionally show an error dialog
+                from tkinter import messagebox
+                messagebox.showerror("Error", f"Failed to load file:\n{str(e)}")
+
+    # Update the make_menu method:
+    def make_menu(self, win):
+        top = tk.Menu(win)
+        win.config(menu=top)
+        file_menu = tk.Menu(top)
+
+        # Add "Open" option before "Quit"
+        file_menu.add_command(label='Open...', command=self.open_file, accelerator='Ctrl+O')
+        file_menu.add_separator()  # Add a visual separator
+        file_menu.add_command(label='Quit', command=sys.exit)
+
+        top.add_cascade(label='File', menu=file_menu, underline=0)
+
+        # Optional: Bind keyboard shortcut
+        win.bind('<Control-o>', lambda e: self.open_file())
     # ---------------- Board Display ----------------
     def display_board(self):
         self.canvas.delete(tk.ALL)
@@ -208,13 +257,6 @@ class Game:
             self.grid_text_ids[row][col] = []
             self.board.text[row][col] = ''
 
-    # ---------------- Menu ----------------
-    def make_menu(self, win):
-        top = tk.Menu(win)
-        win.config(menu=top)
-        file_menu = tk.Menu(top)
-        file_menu.add_command(label='Quit', command=sys.exit)
-        top.add_cascade(label='File', menu=file_menu, underline=0)
 
     #
     # def do_search(self):
@@ -341,10 +383,13 @@ class Game:
         init_true_state = MazeState(start_state[1], start_state[0],
                                     height=grid_height, width=grid_width, coins=coins)
 
+        reward_dict = self.get_rewards()
         # --- Create POMDP problem ---
         problem = MazeProblem(
             planner_name=planner_name,
             goal_state=goal_state,
+            solver_config=self.solver_config,
+            rewards = reward_dict,
             walls=walls,
             holes=holes,
             traps=traps,
@@ -352,12 +397,13 @@ class Game:
             grid_width=grid_width,
             grid_height=grid_height,
             init_belief=init_belief_state,
-            init_true_state=init_true_state
+            init_true_state=init_true_state,
+            move_probabilities=self.get_move_probabilites(),
+            observation_noises=self.get_observation_noise()
         )
 
         # --- Simulation setup ---
         step_count = 0
-        total_reward = 0
         taken_actions = []
         max_steps = grid_width * grid_height * 2  # prevent infinite loops
 
@@ -389,7 +435,6 @@ class Game:
             if (next_state.x, next_state.y) in problem.env.walls:
                 next_state = current_state
             reward = problem.reward_model.sample(problem.env.state, action, next_state)
-            total_reward += reward
             rewards.append(reward)
 
             # --- Move agent icon on GUI ---
@@ -423,7 +468,8 @@ class Game:
                 )
         # --- End simulation ---
         if (current_state.x, current_state.y) == goal_state:
-            discounted_total = calculate_discounted_reward(rewards)
+            discounted_total = calculate_discounted_reward(rewards,self.gamma)
+            total_reward = calculate_total_sum_reward(rewards)
             print(f"🏁 Goal reached in {step_count} steps!")
             print(f"Total reward sum: {total_reward}")
             print(f"Discounted total reward: {discounted_total}")
@@ -432,3 +478,22 @@ class Game:
 
         print(f"Number of actions taken: {len(taken_actions)}")
         print("Actions taken:", taken_actions)
+
+    def get_rewards(self):
+        data = self.board_data
+        hole_penalty = data['holes']['penalty']
+        trap_penalty = data['traps']['penalty']
+        step_cost = data['rewards']['step']
+        wall_penalty = data['walls']['penalty']
+        goal_reward = data['goal']['reward']
+        return {
+            'hole_penalty':hole_penalty,
+            'trap_penalty':trap_penalty,
+            'step_cost':step_cost,
+            'wall_penalty':wall_penalty,
+            'goal_reward':goal_reward,
+        }
+    def get_observation_noise(self):
+        return self.board_data['observation_noise']
+    def get_move_probabilites(self):
+        return self.board_data['move_probabilities']

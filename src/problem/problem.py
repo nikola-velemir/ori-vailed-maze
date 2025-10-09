@@ -21,14 +21,19 @@ class MazeProblem(pomdp_py.POMDP):
     def __init__(self,
                  planner_name: str,
                  goal_state: Tuple[int, int],
+                 solver_config: dict,
+                 rewards: dict,
+                 move_probabilities: dict,
+                 observation_noises: dict,
                  walls: Set[Tuple[int, int]] = None,
                  holes: Set[Tuple[int, int]] = None,
                  traps: Set[Tuple[int, int]] = None,
                  coins: Set[Tuple[int, int]] = None,
                  grid_width: int = 6,
                  grid_height: int = 6,
-                 init_belief=None, init_true_state: MazeState = None,
-                 obs_noise: float = 0.7):
+                 init_belief=None,
+                 init_true_state: MazeState = None, ):
+
         self.height = grid_height
         self.width = grid_width
         self.goal = goal_state
@@ -40,9 +45,12 @@ class MazeProblem(pomdp_py.POMDP):
 
         self.current_state = init_true_state
         self.policy_model = PolicyModel()
-        self.transition_model = TransitionModel(grid_width, grid_height, walls=walls)
+        self.transition_model = TransitionModel(grid_width, grid_height, walls=walls,
+                                                move_probabilities=move_probabilities)
         self.observation_model = BetterObservationModel(width=grid_width, height=grid_height, walls=walls,
-                                                  traps=traps, goal=goal_state)
+                                                        traps=traps, goal=goal_state,
+                                                        sensor_noise=observation_noises['sensor_noise'],
+                                                        position_noise=observation_noises['position_noise'])
         self.reward_model = RewardModel(
             goal_state=goal_state,
             walls=walls,
@@ -50,7 +58,13 @@ class MazeProblem(pomdp_py.POMDP):
             coins=coins,
             holes=holes,
             height=grid_height,
-            width=grid_width)
+            width=grid_width,
+            goal_reward=rewards["goal_reward"],
+            wall_penalty=rewards["wall_penalty"],
+            trap_penalty=rewards["trap_penalty"],
+            hole_penalty=rewards['hole_penalty'],
+            step_cost=rewards['step_cost'],
+        )
 
         self.agent = MazeAgent(
             width=grid_width,
@@ -67,7 +81,6 @@ class MazeProblem(pomdp_py.POMDP):
             width=grid_width,
             walls=self.walls,
             holes=self.holes,
-            noise=obs_noise,
             init_state=init_true_state,
             goal_state=goal_state,
             reward_model=self.reward_model,
@@ -77,7 +90,7 @@ class MazeProblem(pomdp_py.POMDP):
             traps=set()
         )
 
-        self.planner = PlannerFactory.get_planner(planner_name, self.agent)
+        self.planner = PlannerFactory.get_planner(planner_name, self.agent, **solver_config)
         super().__init__(self.agent, self.env, name="GridWorldProblem")
 
     def update_belief(self, action, real_observation):
@@ -106,13 +119,4 @@ class MazeProblem(pomdp_py.POMDP):
         counts = Counter(particles)
         total = len(particles)
         histogram = Histogram({state: count / total for state, count in counts.items()})
-        return histogram
-        particle_list = belief.particles
-        histogram = Histogram({})
-        for particle in particle_list:
-            histogram[particle] = histogram.get(particle, 0) + 1
-
-        total = len(particle_list)
-        for state in histogram:
-            histogram[state] /= total
         return histogram

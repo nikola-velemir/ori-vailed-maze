@@ -71,7 +71,8 @@ class Board:
         self.rewards = data_dict.get("rewards", {"step": -1, "goal": 100})
         self.discount = data_dict.get("discount", 0.95)
         self.observation_noise = data_dict.get("observation_noise", 0.0)
-        self.walls = [tuple(pos[::-1]) for pos in data_dict.get("walls", [])]
+        wall_dict = data_dict.get("walls", {})
+        self.walls = [tuple(pos[::-1]) for pos in wall_dict.get("positions", [])]
 
         # Place agent - (y, x)
         agent_data = data_dict.get("agent", (0, 0))

@@ -10,7 +10,6 @@ class BoardParser:
         with open(board_file_path, 'r') as f:
             data = json.load(f)
             BoardParser._validate_board_layout(data)
-            print(data)
             return data
 
 

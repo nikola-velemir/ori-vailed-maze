@@ -1,5 +1,9 @@
 def calculate_discounted_reward(rewards, gamma=0.9):
-    G = 0
+    g = 0
     for t, r in enumerate(rewards):
-        G += (gamma ** t) * r
-    return round(G,3)
+        g += (gamma ** t) * r
+    return round(g, 3)
+
+
+def calculate_total_sum_reward(rewards: list[float]):
+    return sum(rewards)
