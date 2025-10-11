@@ -150,6 +150,7 @@ venv.bak/
 
 # Rope project settings
 .ropeproject
+*.csv
 
 # mkdocs documentation
 /site

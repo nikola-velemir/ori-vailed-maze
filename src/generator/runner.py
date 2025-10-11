@@ -9,7 +9,6 @@ from src.problem.problem import MazeProblem
 
 def run_training(test_file: str, headless: bool = False):
     data = BoardParser.parse(test_file)
-    print(data)
     rewards = []
 
     grid_width = data['width']
@@ -56,11 +55,12 @@ def run_training(test_file: str, headless: bool = False):
     # --- Simulation setup ---
     step_count = 0
     taken_actions = []
-    max_steps = grid_width * grid_height  # prevent infinite loops
+    max_steps = grid_width * grid_height * 2  # prevent infinite loops
 
     current_state = problem.env.state
 
     print("🟢 Initial board:")
+    reached_goal = False
     print_console_grid(grid_width, grid_height, problem.env.state, goal_state, walls, traps, coins, headless=headless)
 
     # --- Main loop ---
@@ -92,6 +92,7 @@ def run_training(test_file: str, headless: bool = False):
         print(f"🏁 Goal reached in {step_count} steps!")
         print(f"Total reward sum: {total_reward}")
         print(f"Discounted total reward: {discounted_total}")
+        reached_goal = True
     else:
         print(f"⚠ Simulation ended (max {max_steps} steps reached).")
 
@@ -104,6 +105,7 @@ def run_training(test_file: str, headless: bool = False):
         "steps": step_count,
         "path_length": path_length,
         "actions": taken_actions,
+        "reached_goal":reached_goal
 
     }
 

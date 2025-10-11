@@ -1,4 +1,5 @@
 import glob
+import time
 
 import pandas as pd
 
@@ -34,6 +35,7 @@ if __name__ == "__main__":
         episode += 1
 
     df = pd.DataFrame(results)
-    df.to_csv("training_data.csv", index=False)
+    file_name = f'training_data_{time.time()}.csv'
+    df.to_csv(file_name, index=False)
 
     display_summary(df=df)

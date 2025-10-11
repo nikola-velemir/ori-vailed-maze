@@ -151,7 +151,6 @@ class Game:
                 # Reload the board
                 self.load_board_from_dict(self.board_data)
                 print(f"✓ Successfully loaded: {filename}")
-                print(self.board_data)
 
             except Exception as e:
                 print(f"❌ Error loading file: {e}")
