@@ -7,3 +7,6 @@ def calculate_discounted_reward(rewards, gamma=0.9):
 
 def calculate_total_sum_reward(rewards: list[float]):
     return sum(rewards)
+
+def calculate_path_length(steps):
+    return len(steps)

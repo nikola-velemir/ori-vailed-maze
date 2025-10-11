@@ -1,20 +1,14 @@
 import os
 import sys
-import time
 import tkinter as tk
 import tkinter.font as tkFont
 from copy import deepcopy
 from tkinter import filedialog
 
-import matplotlib.pyplot as plt
 from PIL import Image, ImageTk  # pip install --upgrade Pillow
 
-from src.agent.belief import initialize_uniform_belief
 from src.board_parser.board_parser import BoardParser
-from src.utils.metric_utils import calculate_discounted_reward, calculate_total_sum_reward
 from src.visuals.game.board import Board
-from src.visuals.heatmap.heatmap_manager import HeatmapManager
-from src.visuals.heatmap.heatmap_window import TkinterHeatmapWindow
 from src.visuals.runner import run_pomdp_simulation
 
 # Mapping board symbols to colors and icons
@@ -33,11 +27,12 @@ board_to_icons = {
 
 
 class Game:
-    def __init__(self, board_file='board.json', default_search="POMCP", cell_size=40):
+    def __init__(self, board_file='board.json', cell_size=40):
         self.board_data = BoardParser.parse(board_file_path=board_file)
         self.solver_config = self.board_data['solver_config']
         self.gamma = self.solver_config['discount_factor']
-        print(self.board_data)
+
+        self.board_file = board_file
         self.cell_size = cell_size
         self.original_board = deepcopy(self.board_data)
         # Load board from JSON dict if provided
@@ -177,9 +172,25 @@ class Game:
 
         top.add_cascade(label='File', menu=file_menu, underline=0)
 
+        top.add_command(label='Reload Board', command=self.reload_board)
+
         # Optional: Bind keyboard shortcut
         win.bind('<Control-o>', lambda e: self.open_file())
     # ---------------- Board Display ----------------
+    def reload_board(self):
+        """Reload the last loaded board file."""
+        try:
+            self.board_data = BoardParser.parse(board_file_path=self.board_file)
+            self.solver_config = self.board_data['solver_config']
+            self.gamma = self.solver_config['discount_factor']
+            self.original_board = deepcopy(self.board_data)
+            self.load_board_from_dict(self.board_data)
+            print(f"✓ Reloaded board from: {self.board_file}")
+        except Exception as e:
+            print(f"❌ Error reloading file: {e}")
+            from tkinter import messagebox
+            messagebox.showerror("Error", f"Failed to reload file:\n{str(e)}")
+
     def display_board(self):
         self.canvas.delete(tk.ALL)
         for row in range(len(self.board.data)):
@@ -263,34 +274,6 @@ class Game:
             self.board.text[row][col] = ''
 
 
-    #
-    # def do_search(self):
-    #     self.reset()
-    #     search_class = self.get_search_class()
-    #     search = search_class(self.board)
-    #     initial_state = RobotState
-    #     start = time.perf_counter()
-    #     path, self.processed, states = search.search(initial_state)
-    #     end = time.perf_counter()
-    #     self.path = list(map(lambda x: x.position, path)) if path else None
-    #
-    #     print('-' * 15, 'DONE', '-' * 15)
-    #     print('Time: {0:.4f}s'.format(end - start))
-    #     print('Processed nodes:', len(self.processed))
-    #     print('States left:', len(states))
-    #     if path:
-    #         print('Total cost:', path[-1].get_current_cost())
-    #     else:
-    #         print('-' * 15, 'NO SOLUTION', '-' * 15)
-    #
-    #     if self.path:
-    #         # Draw solution path
-    #         for idx, p in enumerate(self.path):
-    #             text = self.board.text[p[0]][p[1]]
-    #             text = f"{text},{idx}" if text else str(idx)
-    #             self.board.text[p[0]][p[1]] = text
-    #             self.update_board(p[0], p[1])
-
     def move_icon_xy(self, from_xy, to_xy):
         self.move_icon((from_xy[1], from_xy[0]), (to_xy[1], to_xy[0]))
 
@@ -321,12 +304,10 @@ class Game:
             self.move_icon(position, p.position, hasattr(p, 'has_box') and p.has_box)
             position = p.position
 
-    # ---------------- Clear / Reset ----------------
-    def clear(self):
-        self.board.clear()
-        self.display_board()
+
 
     def reset(self):
+        """Resets the board"""
         self.load_board_from_dict(self.original_board)
         for row in range(self.rows):
             for col in range(self.cols):
@@ -334,9 +315,31 @@ class Game:
         self.display_board()
 
     def run_simulation(self):
+        """Runs the simulation in friend function"""
         run_pomdp_simulation(self)
 
+    def print_console_grid(self, agent_state, goal_state, walls, traps, coins):
+        """Prints a simple ASCII grid showing agent, goal, and obstacles."""
+        print()
+        for y in range(self.rows):
+            row = ""
+            for x in range(self.cols):
+                if agent_state.x == x and agent_state.y == y:
+                    row += "A "
+                elif goal_state and goal_state[0] == x and goal_state[1] == y:
+                    row += "G "
+                elif (x, y) in walls:
+                    row += "# "
+                elif (x, y) in traps:
+                    row += "T "
+                elif (x, y) in coins:
+                    row += "C "
+                else:
+                    row += ". "
+            print(row)
+        print()
     def get_rewards(self):
+        """Extracts rewards from board data."""
         data = self.board_data
         hole_penalty = data['holes']['penalty']
         trap_penalty = data['traps']['penalty']

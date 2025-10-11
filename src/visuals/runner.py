@@ -3,7 +3,7 @@ import time
 from matplotlib import pyplot as plt
 
 from src.agent.belief import initialize_uniform_belief
-from src.utils.metric_utils import calculate_discounted_reward, calculate_total_sum_reward
+from src.utils.metric_utils import calculate_discounted_reward, calculate_total_sum_reward, calculate_path_length
 from src.visuals.heatmap.heatmap_window import TkinterHeatmapWindow
 
 
@@ -15,7 +15,6 @@ def run_pomdp_simulation(self):
     from src.domain.action import Action
     from src.domain.maze_state import MazeState
     from src.problem.problem import MazeProblem
-    from src.visuals.heatmap.heatmap_utils import show_histogram
 
     print("\n▶ Starting POMDP simulation...")
 
@@ -126,6 +125,7 @@ def run_pomdp_simulation(self):
             heatmap_window.update(step_count, problem.get_current_belief_state(),
                                   (problem.env.state.x, problem.env.state.y))
 
+    path_length = calculate_path_length(taken_actions)
     # --- End simulation ---
     if (current_state.x, current_state.y) == goal_state:
         discounted_total = calculate_discounted_reward(rewards, self.gamma)
@@ -136,7 +136,7 @@ def run_pomdp_simulation(self):
     else:
         print(f"⚠ Simulation ended (max {max_steps} steps reached).")
 
-    print(f"Number of actions taken: {len(taken_actions)}")
+    print(f"Number of actions taken: {path_length}")
     print("Actions taken:", taken_actions)
     plt.close('all')
     plt.clf()
