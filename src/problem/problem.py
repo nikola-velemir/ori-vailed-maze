@@ -44,12 +44,20 @@ class MazeProblem(pomdp_py.POMDP):
 
         self.current_state = init_true_state
         self.policy_model = PolicyModel()
-        self.transition_model = TransitionModel(grid_width, grid_height, walls=walls,
-                                                move_probabilities=move_probabilities)
-        self.observation_model = ObservationModel(width=grid_width, height=grid_height, walls=walls,
-                                                  traps=traps, goal=goal_state,
+        self.transition_model = TransitionModel(grid_width,
+                                                grid_height,
+                                                walls=walls,
+                                                coins=self.coins,
+                                                move_probabilities=move_probabilities
+                                                )
+        self.observation_model = ObservationModel(width=grid_width,
+                                                  height=grid_height,
+                                                  walls=walls,
+                                                  traps=traps,
+                                                  goal=goal_state,
+                                                  coins=self.coins,
                                                   sensor_noise=observation_noises['sensor_noise'],
-                                                  position_noise=observation_noises['position_noise'])
+                                                  sensor_failure=observation_noises['sensor_failure'])
         self.reward_model = RewardModel(
             goal_state=goal_state,
             walls=walls,
@@ -62,6 +70,7 @@ class MazeProblem(pomdp_py.POMDP):
             wall_penalty=rewards["wall_penalty"],
             trap_penalty=rewards["trap_penalty"],
             hole_penalty=rewards['hole_penalty'],
+            coin_reward=rewards['coin_reward'],
             step_cost=rewards['step_cost'],
         )
 
@@ -80,6 +89,7 @@ class MazeProblem(pomdp_py.POMDP):
             width=grid_width,
             walls=self.walls,
             holes=self.holes,
+            coins=self.coins,
             init_state=init_true_state,
             goal_state=goal_state,
             reward_model=self.reward_model,

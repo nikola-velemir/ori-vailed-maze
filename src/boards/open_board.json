@@ -7,18 +7,15 @@
   "agent": [1, 7],
 
   "goal": {
-    "position": [5, 0],
-    "reward": 1000,
+    "position": [7, 1],
+    "reward": 100,
     "terminal": true
   },
 
   "walls": {
     "positions":[
-   [0, 1],
-    [1, 2],
-    [3, 3],
-    [4, 3],
-    [3, 5]
+
+
     ],
     "penalty": -10
   },
@@ -28,7 +25,14 @@
     "penalty": -100,
     "terminal": true
   },
+"coins": {
+  "positions": [
 
+    [1,4],
+      [4,4]
+    ],
+    "reward": 75
+  },
   "traps": {
     "positions": [
     ],
@@ -37,15 +41,7 @@
   },
 
   "rewards": {
-    "step": -1
-  },
-  "coins": {
-    "positions": [
-      [4,6],
-
-      [2,4]
-    ],
-    "reward": 100
+    "step": -0.25
   },
   "move_probabilities": {
     "intended": 0.8,
@@ -54,14 +50,14 @@
   },
 
   "observation_noise": {
-    "sensor_noise": 0.4,
+    "sensor_noise": 0.3,
     "sensor_failure": 0.1
   },
 
   "solver_config": {
-    "max_depth": 25,
+    "max_depth":40,
     "discount_factor": 0.8,
     "exploration_const": 100,
-    "num_sims": 10000
+    "num_sims": 5000
   }
 }

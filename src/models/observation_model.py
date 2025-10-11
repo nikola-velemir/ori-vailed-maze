@@ -12,17 +12,23 @@ class ObservationModel(pomdp_py.ObservationModel):
     def __init__(self, width: int, height: int,
                  walls: Set[Tuple[int, int]] = None,
                  traps: Set[Tuple[int, int]] = None,
+                 coins: Set[Tuple[int, int]] = None,
+                 holes: Set[Tuple[int, int]] = None,
                  goal: Tuple[int, int] = None,
-                 position_noise: float = 0.2,  # noise in x,y position
-                 sensor_noise: float = 0.1,  # noise in directional sensing
+                 sensor_noise: float = 0.4,  # Sensor errors
+                 sensor_failure: float = 0.1,  # Complete sensor failure
                  epsilon: float = 1e-3):
         self.width = width
         self.height = height
+
+        self.holes = holes if holes else set()
         self.walls = walls if walls else set()
         self.traps = traps if traps else set()
+        self.coins = coins if coins else set()
+
         self.goal = goal
-        self.position_noise = position_noise
         self.sensor_noise = sensor_noise
+        self.sensor_failure = sensor_failure
         self.epsilon = epsilon
 
         self.directions = {
@@ -33,31 +39,35 @@ class ObservationModel(pomdp_py.ObservationModel):
         }
 
     def sample(self, next_state: MazeState, action: Action) -> Observation:
-        """Sample observation with both position and directional sensing"""
-
-        if random.random() < self.position_noise:
-            neighbors = self._get_valid_neighbors(next_state)
-            if neighbors:
-                x, y = random.choice(neighbors)
-            else:
-                x, y = next_state.x, next_state.y
-        else:
-            x, y = next_state.x, next_state.y
+        """Sample observation - only what the agent senses, no position info"""
 
         sensed = {}
         for dir_name, (dx, dy) in self.directions.items():
-            true_content = self._sense_direction(next_state, dx, dy)
-
-            if random.random() < self.sensor_noise:
-                sensed[dir_name] = random.choice(['clear', 'wall', 'trap'])
+            # Sometimes sensors completely fail
+            if random.random() < self.sensor_failure:
+                sensed[dir_name] = None  # No information
             else:
-                sensed[dir_name] = true_content
+                true_content = self._sense_direction(next_state, dx, dy)
 
-        return Observation(x, y,
-                           north=sensed['north'],
-                           south=sensed['south'],
-                           east=sensed['east'],
-                           west=sensed['west'])
+                if random.random() < self.sensor_noise:
+                    # Wrong reading, could be anything
+                    sensed[dir_name] = random.choice(['clear', 'wall', 'something', 'coin'])
+                else:
+                    # Merge trap and goal into generic "something"
+                    if true_content in ['trap', 'goal']:
+                        sensed[dir_name] = 'something'
+                    # Sense coins
+                    if true_content == 'coin':
+                        sensed[dir_name] = 'coin'
+                    else:
+                        sensed[dir_name] = true_content
+
+        return Observation(
+            north=sensed['north'],
+            south=sensed['south'],
+            east=sensed['east'],
+            west=sensed['west']
+        )
 
     def _sense_direction(self, state: MazeState, dx: int, dy: int) -> str:
         """What's actually in this direction?"""
@@ -74,39 +84,58 @@ class ObservationModel(pomdp_py.ObservationModel):
             return 'trap'
         if self.goal and (nx, ny) == self.goal:
             return 'goal'
+        if (nx, ny) in state.coins:
+            return 'coin'
+        if (nx, ny) in self.holes:
+            return 'hole'
 
         return 'clear'
 
     def probability(self, observation: Observation, next_state: MazeState, action: Action) -> float:
-        """Calculate P(o | s', a)"""
+        """Calculate P(o | s', a) - only based on directional sensing"""
         prob = 1.0
 
-        # 1. Position probability (as before)
-        if observation.x == next_state.x and observation.y == next_state.y:
-            prob *= (1 - self.position_noise)
-        else:
-            neighbors = self._get_valid_neighbors(next_state)
-            if (observation.x, observation.y) in neighbors:
-                prob *= self.position_noise / len(neighbors) if neighbors else self.epsilon
-            else:
-                return self.epsilon
-
-        # 2. Directional sensing probability
+        # Only directional sensing probability matters now
         for dir_name, (dx, dy) in self.directions.items():
             true_content = self._sense_direction(next_state, dx, dy)
             observed_content = getattr(observation, dir_name)
 
-            if observed_content == true_content:
-                prob *= (1 - self.sensor_noise)
+            # Sensor failed - any observation is possible
+            if observed_content is None:
+                prob *= self.sensor_failure
             else:
-                prob *= self.sensor_noise / 2  # Could be wrong in 2 ways
+                prob *= (1 - self.sensor_failure)
+
+                # Map true content to what could be observed
+                if true_content in ['trap', 'goal']:
+                    expected = 'something'
+                elif true_content  == 'coin':
+                    expected = 'coin'
+                elif true_content == 'hole':
+                    expected = 'danger'
+                else:
+                    expected = true_content
+
+                if observed_content == expected:
+                    prob *= (1 - self.sensor_noise)
+                else:
+                    prob *= self.sensor_noise / 4
 
         return max(prob, self.epsilon)
 
-    def _get_valid_neighbors(self, state: MazeState):
-        neighbors = []
-        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
-            nx, ny = state.x + dx, state.y + dy
-            if 0 <= nx < self.width and 0 <= ny < self.height and (nx, ny) not in self.walls:
-                neighbors.append((nx, ny))
-        return neighbors
+    def get_all_observations(self) -> list:
+        """Generate all possible observation combinations"""
+        observations = []
+        possible_values = ['clear', 'wall', 'something', 'coin','danger', None]
+
+        # Generate all combinations of 4 directional readings
+        for north in possible_values:
+            for south in possible_values:
+                for east in possible_values:
+                    for west in possible_values:
+                        observations.append(Observation(
+                            north=north, south=south,
+                            east=east, west=west
+                        ))
+
+        return observations
