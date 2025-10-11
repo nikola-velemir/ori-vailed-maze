@@ -1,0 +1,155 @@
+{
+    "width": 8,
+    "height": 8,
+    "name": "Board_c60025dc-2a5a-484f-b046-e99ab1e5df77",
+    "description": "Generated automatically with ID c60025dc-2a5a-484f-b046-e99ab1e5df77.",
+    "agent": [
+        7,
+        2
+    ],
+    "goal": {
+        "position": [
+            0,
+            6
+        ],
+        "reward": 1000,
+        "terminal": true
+    },
+    "walls": {
+        "positions": [
+            [
+                3,
+                1
+            ],
+            [
+                2,
+                0
+            ],
+            [
+                6,
+                4
+            ],
+            [
+                6,
+                7
+            ],
+            [
+                1,
+                7
+            ],
+            [
+                3,
+                3
+            ],
+            [
+                2,
+                6
+            ],
+            [
+                6,
+                3
+            ],
+            [
+                1,
+                3
+            ]
+        ],
+        "penalty": -10
+    },
+    "holes": {
+        "positions": [
+            [
+                4,
+                6
+            ],
+            [
+                6,
+                5
+            ],
+            [
+                4,
+                3
+            ]
+        ],
+        "penalty": -100,
+        "terminal": true
+    },
+    "traps": {
+        "positions": [
+            [
+                7,
+                4
+            ],
+            [
+                0,
+                4
+            ],
+            [
+                7,
+                7
+            ],
+            [
+                4,
+                2
+            ],
+            [
+                5,
+                3
+            ],
+            [
+                7,
+                5
+            ]
+        ],
+        "penalty": -50,
+        "terminal": false
+    },
+    "coins": {
+        "positions": [
+            [
+                1,
+                2
+            ],
+            [
+                3,
+                4
+            ],
+            [
+                0,
+                0
+            ],
+            [
+                5,
+                7
+            ],
+            [
+                7,
+                3
+            ],
+            [
+                7,
+                6
+            ]
+        ],
+        "reward": 100
+    },
+    "rewards": {
+        "step": -1
+    },
+    "move_probabilities": {
+        "intended": 0.8,
+        "left_slip": 0.1,
+        "right_slip": 0.1
+    },
+    "observation_noise": {
+        "sensor_noise": 0.4,
+        "sensor_failure": 0.1
+    },
+    "solver": "pouct",
+    "solver_config": {
+        "max_depth": 25,
+        "discount_factor": 0.8,
+        "exploration_const": 100,
+        "num_sims": 2500
+    }
+}

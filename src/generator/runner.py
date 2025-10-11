@@ -1,47 +1,45 @@
-import time
-
-from matplotlib import pyplot as plt
-
 from src.agent.belief import initialize_uniform_belief
 from src.board_parser.board_parser import BoardParser
 from src.utils.metric_utils import calculate_discounted_reward, calculate_total_sum_reward, calculate_path_length
-from src.visuals.heatmap.heatmap_window import TkinterHeatmapWindow
 
 from src.domain.action import Action
 from src.domain.maze_state import MazeState
 from src.problem.problem import MazeProblem
 
 
-def run_training(test_file: str):
+def run_training(test_file: str, headless: bool = False):
     data = BoardParser.parse(test_file)
     print(data)
     rewards = []
 
-    r, c = self.board.find_position('g')
-    goal_state = (c, r)
-    c, r = self.board.find_position('a')
+    grid_width = data['width']
+    grid_height = data['height']
+    r, c = data['goal']['position']
+    goal_state = (r, c)
+    c, r = data['agent']
     start_state = (c, r)
 
     if not goal_state or not start_state:
         print("❌ Missing agent or goal position on the board.")
         return
 
-    walls = set((c, r) for r, c in self.board.find_all_positions('w'))
-    holes = set((c, r) for r, c in self.board.find_all_positions('h'))
-    traps = set((c, r) for r, c in self.board.find_all_positions('t'))
-    coins = set((c, r) for r, c in self.board.find_all_positions('c'))
+    walls = set((c, r) for r, c in data.get("walls", {}).get("positions", []))
+    holes = set(tuple(pos) for pos in data.get("holes", {}).get("positions", []))
+    traps = set(tuple(pos) for pos in data.get("traps", {}).get("positions", []))
+    coins = set(tuple(pos) for pos in data.get("coins", {}).get("positions", []))
 
     # --- Initialize belief + state ---
-    init_belief_state = initialize_uniform_belief(planner_name, grid_width, grid_height, coins)
+    init_belief_state = initialize_uniform_belief('pouct', grid_width, grid_height, coins)
     init_true_state = MazeState(start_state[1], start_state[0],
                                 height=grid_height, width=grid_width, coins=coins)
 
-    reward_dict = self.get_rewards()
+    solver_config = data['solver_config']
+    reward_dict = get_rewards(data)
     # --- Create POMDP problem ---
     problem = MazeProblem(
-        planner_name=planner_name,
+        planner_name='pouct',
         goal_state=goal_state,
-        solver_config=self.solver_config,
+        solver_config=solver_config,
         rewards=reward_dict,
         walls=walls,
         holes=holes,
@@ -51,34 +49,19 @@ def run_training(test_file: str):
         grid_height=grid_height,
         init_belief=init_belief_state,
         init_true_state=init_true_state,
-        move_probabilities=self.get_move_probabilites(),
-        observation_noises=self.get_observation_noise()
+        move_probabilities=get_move_probabilites(data),
+        observation_noises=get_observation_noise(data)
     )
 
     # --- Simulation setup ---
     step_count = 0
     taken_actions = []
-    max_steps = grid_width * grid_height * 2  # prevent infinite loops
+    max_steps = grid_width * grid_height  # prevent infinite loops
 
     current_state = problem.env.state
-    self.display_board()
-    self.root.update()
 
     print("🟢 Initial board:")
-    self.print_console_grid(problem.env.state, goal_state, walls, traps, coins)
-    heatmap_window = None
-    if self.show_heatmap_var.get():
-        if not heatmap_window:
-            heatmap_window = TkinterHeatmapWindow(
-                grid_width=problem.width,
-                grid_height=problem.height,
-                walls=problem.walls,
-                traps=problem.traps,
-                coins=problem.coins,  # or empty set() if none
-                goal_position=problem.goal
-            )
-        heatmap_window.update(step_count, problem.get_current_belief_state(),
-                              (problem.env.state.x, problem.env.state.y))
+    print_console_grid(grid_width, grid_height, problem.env.state, goal_state, walls, traps, coins, headless=headless)
 
     # --- Main loop ---
     while (current_state.x, current_state.y) != goal_state and step_count < max_steps:
@@ -91,13 +74,6 @@ def run_training(test_file: str):
         reward = problem.reward_model.sample(problem.env.state, action, next_state)
         rewards.append(reward)
 
-        # --- Move agent icon on GUI ---
-        from_xy = (current_state.x, current_state.y)
-        to_xy = (next_state.x, next_state.y)
-        self.move_icon_xy(from_xy, to_xy)
-        self.root.update()
-        time.sleep(0.2)
-
         # --- Apply transition + update belief ---
         problem.env.apply_transition(next_state)
         obs = problem.observation_model.sample(next_state, action)
@@ -105,26 +81,13 @@ def run_training(test_file: str):
         current_state = next_state
 
         print(f"Step {step_count} | Action={action.name} | Reward={reward}")
-        self.print_console_grid(problem.env.state, goal_state, walls, traps, coins)
-
-        # Optional: show histogram of belief
-        if self.show_heatmap_var.get():
-            if not heatmap_window:
-                heatmap_window = TkinterHeatmapWindow(
-                    grid_width=problem.width,
-                    grid_height=problem.height,
-                    walls=problem.walls,
-                    traps=problem.traps,
-                    coins=problem.coins,  # or empty set() if none
-                    goal_position=problem.goal
-                )
-            heatmap_window.update(step_count, problem.get_current_belief_state(),
-                                  (problem.env.state.x, problem.env.state.y))
+        print_console_grid(grid_width, grid_height, problem.env.state, goal_state, walls, traps, coins,
+                           headless=headless)
 
     path_length = calculate_path_length(taken_actions)
     # --- End simulation ---
     if (current_state.x, current_state.y) == goal_state:
-        discounted_total = calculate_discounted_reward(rewards, self.gamma)
+        discounted_total = calculate_discounted_reward(rewards, solver_config['discount_factor'])
         total_reward = calculate_total_sum_reward(rewards)
         print(f"🏁 Goal reached in {step_count} steps!")
         print(f"Total reward sum: {total_reward}")
@@ -134,8 +97,65 @@ def run_training(test_file: str):
 
     print(f"Number of actions taken: {path_length}")
     print("Actions taken:", taken_actions)
-    plt.close('all')
-    plt.clf()
-    plt.cla()
+    return {
+        'file': test_file,
+        "total_reward": calculate_total_sum_reward(rewards),
+        "discounted_reward": calculate_discounted_reward(rewards),
+        "steps": step_count,
+        "path_length": path_length,
+        "actions": taken_actions,
+
+    }
+
+
+def get_rewards(data):
+    hole_penalty = data['holes']['penalty']
+    trap_penalty = data['traps']['penalty']
+    step_cost = data['rewards']['step']
+    wall_penalty = data['walls']['penalty']
+    goal_reward = data['goal']['reward']
+    coins_reward = data['coins']['reward']
+    return {
+        'hole_penalty': hole_penalty,
+        'trap_penalty': trap_penalty,
+        'step_cost': step_cost,
+        'wall_penalty': wall_penalty,
+        'goal_reward': goal_reward,
+        'coin_reward': coins_reward,
+    }
+
+
+def get_observation_noise(data):
+    return data['observation_noise']
+
+
+def get_move_probabilites(data):
+    return data['move_probabilities']
+
+
+def print_console_grid(grid_width, grid_height, agent_state, goal_state, walls, traps, coins, headless=False):
+    if headless:
+        return
+    """Prints a simple ASCII grid showing agent, goal, and obstacles."""
+    print()
+    for y in range(grid_height):
+        row = ""
+        for x in range(grid_width):
+            if agent_state.x == x and agent_state.y == y:
+                row += "A "
+            elif goal_state and goal_state[0] == x and goal_state[1] == y:
+                row += "G "
+            elif (x, y) in walls:
+                row += "# "
+            elif (x, y) in traps:
+                row += "T "
+            elif (x, y) in coins:
+                row += "C "
+            else:
+                row += ". "
+        print(row)
+    print()
+
+
 if __name__ == '__main__':
-    run_training("dataset/train/board_0b675c86-ba19-45a8-9654-1cb4335a40fe.json")
+    run_training("dataset/train/board_0b8087fe-92fd-4e4e-bb61-8badd011a238.json")
