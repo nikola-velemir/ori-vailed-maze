@@ -3,23 +3,7 @@ import json
 
 from src.generator.generate_board import generate_board_from_config
 
-config = {
-    "width": 8,
-    "height": 8,
-    "wall_density": 0.15,
-    "hole_density": 0.05,
-    "trap_density": 0.1,
-    "coin_density": 0.1,
-    "goal_reward": 1000,
-    "wall_penalty": -10,
-    "hole_penalty": -100,
-    "trap_penalty": -50,
-    "coin_reward": 100,
-    "step_reward": -1,
-    "move_probabilities": {"intended": 0.8, "left_slip": 0.1, "right_slip": 0.1},
-    "observation_noise": {"sensor_noise": 0.4, "sensor_failure": 0.1},
-    "solver_config": {"max_depth": 25, "discount_factor": 0.8, "exploration_const": 100, "num_sims": 2500}
-}
+
 
 
 def generate_dataset_split(
@@ -47,6 +31,9 @@ def generate_dataset_split(
         print(f"\n📁 Generating {count} boards for {split}/ ...")
 
         created_files = []
+        config = None
+        with open("config.json", "r") as f:
+            config = json.load(f)
         for i in range(count):
             # Use different seed offsets for reproducibility
             board_seed = seed + i + (hash(split) % 1000)

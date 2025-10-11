@@ -5,7 +5,7 @@ import uuid
 
 def generate_board_from_config(config, seed=None):
     """
-    Generate a board based on a configuration dictionary.
+    Generate a board based on a configuration dictionary
 
     Example config:
     {

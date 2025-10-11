@@ -1,0 +1,17 @@
+{
+    "width": 8,
+    "height": 8,
+    "wall_density": 0.15,
+    "hole_density": 0.05,
+    "trap_density": 0.1,
+    "coin_density": 0.1,
+    "goal_reward": 500,
+    "wall_penalty": -10,
+    "hole_penalty": -100,
+    "trap_penalty": -50,
+    "coin_reward": 20,
+    "step_reward": -1,
+    "move_probabilities": {"intended": 0.8, "left_slip": 0.1, "right_slip": 0.1},
+    "observation_noise": {"sensor_noise": 0.7, "sensor_failure": 0.1},
+    "solver_config": {"max_depth": 25, "discount_factor": 0.8, "exploration_const": 90, "num_sims": 1000}
+}
