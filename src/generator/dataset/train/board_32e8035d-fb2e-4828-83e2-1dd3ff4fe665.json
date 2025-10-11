@@ -1,0 +1,127 @@
+{
+    "width": 8,
+    "height": 8,
+    "name": "Board_32e8035d-fb2e-4828-83e2-1dd3ff4fe665",
+    "description": "Generated automatically with ID 32e8035d-fb2e-4828-83e2-1dd3ff4fe665.",
+    "agent": [
+        5,
+        6
+    ],
+    "goal": {
+        "position": [
+            7,
+            1
+        ],
+        "reward": 10.0,
+        "terminal": true
+    },
+    "walls": {
+        "positions": [
+            [
+                0,
+                7
+            ],
+            [
+                0,
+                3
+            ],
+            [
+                5,
+                1
+            ],
+            [
+                6,
+                7
+            ],
+            [
+                7,
+                2
+            ],
+            [
+                7,
+                5
+            ]
+        ],
+        "penalty": -5.0
+    },
+    "holes": {
+        "positions": [
+            [
+                1,
+                1
+            ],
+            [
+                1,
+                4
+            ],
+            [
+                1,
+                5
+            ]
+        ],
+        "penalty": -10.0,
+        "terminal": true
+    },
+    "traps": {
+        "positions": [
+            [
+                1,
+                2
+            ],
+            [
+                0,
+                4
+            ],
+            [
+                3,
+                0
+            ]
+        ],
+        "penalty": -8.0,
+        "terminal": false
+    },
+    "coins": {
+        "positions": [
+            [
+                4,
+                3
+            ],
+            [
+                6,
+                4
+            ],
+            [
+                7,
+                6
+            ],
+            [
+                1,
+                6
+            ],
+            [
+                5,
+                2
+            ]
+        ],
+        "reward": 2.0
+    },
+    "rewards": {
+        "step": -0.1
+    },
+    "move_probabilities": {
+        "intended": 0.8,
+        "left_slip": 0.1,
+        "right_slip": 0.1
+    },
+    "observation_noise": {
+        "sensor_noise": 0.1,
+        "sensor_failure": 0.05
+    },
+    "solver": "pomcp",
+    "solver_config": {
+        "max_depth": 20,
+        "discount_factor": 0.95,
+        "exploration_const": 10.0,
+        "num_sims": 1000
+    }
+}
