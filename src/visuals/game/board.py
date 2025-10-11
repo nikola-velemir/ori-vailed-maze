@@ -40,6 +40,7 @@ class Board:
             self.holes = []
             self.traps = []
             self.walls = []
+            self.coins = []
             self.agent = (0, 0)  # (y, x)
             self.goal = (rows - 1, cols - 1)  # (y, x)
             self.rewards = {"step": -1, "goal": 100}
@@ -101,6 +102,14 @@ class Board:
             self.holes = [tuple(pos[::-1]) for pos in holes_data]
         for y, x in self.holes:
             self.data[y][x] = 'h'
+
+        coins_data = data_dict.get("coins", [])
+        if isinstance(coins_data, dict):
+                self.coins = [tuple(pos[::-1]) for pos in coins_data.get("positions", [])]
+        else:
+                self.coins = [tuple(pos[::-1]) for pos in coins_data]
+        for y, x in self.coins:
+                self.data[y][x] = 'c'
 
         # Place traps - (y, x)
         traps_data = data_dict.get("traps", [])

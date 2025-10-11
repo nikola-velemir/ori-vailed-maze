@@ -12,14 +12,20 @@ class ObservationModel(pomdp_py.ObservationModel):
     def __init__(self, width: int, height: int,
                  walls: Set[Tuple[int, int]] = None,
                  traps: Set[Tuple[int, int]] = None,
+                 coins: Set[Tuple[int, int]] = None,
+                 holes: Set[Tuple[int, int]] = None,
                  goal: Tuple[int, int] = None,
                  sensor_noise: float = 0.4,  # Sensor errors
                  sensor_failure: float = 0.1,  # Complete sensor failure
                  epsilon: float = 1e-3):
         self.width = width
         self.height = height
+
+        self.holes = holes if holes else set()
         self.walls = walls if walls else set()
         self.traps = traps if traps else set()
+        self.coins = coins if coins else set()
+
         self.goal = goal
         self.sensor_noise = sensor_noise
         self.sensor_failure = sensor_failure
@@ -44,12 +50,15 @@ class ObservationModel(pomdp_py.ObservationModel):
                 true_content = self._sense_direction(next_state, dx, dy)
 
                 if random.random() < self.sensor_noise:
-                    # Wrong reading - could be anything
-                    sensed[dir_name] = random.choice(['clear', 'wall', 'something'])
+                    # Wrong reading, could be anything
+                    sensed[dir_name] = random.choice(['clear', 'wall', 'something', 'coin'])
                 else:
                     # Merge trap and goal into generic "something"
                     if true_content in ['trap', 'goal']:
                         sensed[dir_name] = 'something'
+                    # Sense coins
+                    if true_content == 'coin':
+                        sensed[dir_name] = 'coin'
                     else:
                         sensed[dir_name] = true_content
 
@@ -75,6 +84,10 @@ class ObservationModel(pomdp_py.ObservationModel):
             return 'trap'
         if self.goal and (nx, ny) == self.goal:
             return 'goal'
+        if (nx, ny) in state.coins:
+            return 'coin'
+        if (nx, ny) in self.holes:
+            return 'hole'
 
         return 'clear'
 
@@ -96,20 +109,24 @@ class ObservationModel(pomdp_py.ObservationModel):
                 # Map true content to what could be observed
                 if true_content in ['trap', 'goal']:
                     expected = 'something'
+                elif true_content  == 'coin':
+                    expected = 'coin'
+                elif true_content == 'hole':
+                    expected = 'danger'
                 else:
                     expected = true_content
 
                 if observed_content == expected:
                     prob *= (1 - self.sensor_noise)
                 else:
-                    prob *= self.sensor_noise / 3
+                    prob *= self.sensor_noise / 4
 
         return max(prob, self.epsilon)
 
     def get_all_observations(self) -> list:
         """Generate all possible observation combinations"""
         observations = []
-        possible_values = ['clear', 'wall', 'something', None]
+        possible_values = ['clear', 'wall', 'something', 'coin','danger', None]
 
         # Generate all combinations of 4 directional readings
         for north in possible_values:

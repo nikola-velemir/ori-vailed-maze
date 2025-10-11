@@ -1,7 +1,7 @@
 BOARD_SCHEMA = {
     "type": "object",
     "required": [
-        "width", "height", "agent", "goal", "walls", "holes", "traps",
+        "width", "height", "agent", "goal", "walls", "holes", "traps", "coins",
         "rewards", "move_probabilities", "observation_noise",
     ],
     "properties": {
@@ -58,7 +58,7 @@ BOARD_SCHEMA = {
                     "items": {
                         "type": "array",
                         "items": {"type": "integer", "minimum": 0},
-                        "minItems": 2,
+                        "minItems": 0,
                         "maxItems": 2
                     }
                 },
@@ -66,7 +66,22 @@ BOARD_SCHEMA = {
                 "terminal": {"type": "boolean"}
             }
         },
-
+        "coins":{
+            'type': 'object',
+            "required":["positions","reward"],
+            "properties": {
+                "positions": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {"type": "integer", "minimum": 0},
+                        "minItems": 0,
+                        "maxItems": 2
+                    }
+                },
+                "reward": {"type": "number"},
+            }
+        },
         "traps": {
             "type": "object",
             "required": ["positions", "penalty", "terminal"],
@@ -76,7 +91,7 @@ BOARD_SCHEMA = {
                     "items": {
                         "type": "array",
                         "items": {"type": "integer", "minimum": 0},
-                        "minItems": 2,
+                        "minItems": 0,
                         "maxItems": 2
                     }
                 },

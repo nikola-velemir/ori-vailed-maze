@@ -1,95 +1,143 @@
 import time
 
-from src.visuals.game.game import Game
+from matplotlib import pyplot as plt
+
+from src.agent.belief import initialize_uniform_belief
+from src.utils.metric_utils import calculate_discounted_reward, calculate_total_sum_reward
+from src.visuals.heatmap.heatmap_window import TkinterHeatmapWindow
 
 
-def run_pomdp_simulation(self:Game):
-    """Runs a POMDP simulation and visualizes each step."""
-    from src.agent.belief import initialize_uniform_histogram_belief
+def run_pomdp_simulation(self):
+    rewards = []
+    planner_name = self.search_class_text.get()
+    self.reset()
+    """Run a POMDP simulation and visually update the board after each step."""
     from src.domain.action import Action
     from src.domain.maze_state import MazeState
     from src.problem.problem import MazeProblem
     from src.visuals.heatmap.heatmap_utils import show_histogram
 
-    # Extract board info
+    print("\n▶ Starting POMDP simulation...")
+
+    # --- Extract board setup ---
     grid_height = self.rows
     grid_width = self.cols
-    goal_state = self.board.find_position('g')
-    start_state = self.board.find_position('a')
+    r, c = self.board.find_position('g')
+    goal_state = (c, r)
+    c, r = self.board.find_position('a')
+    start_state = (c, r)
 
-    # Convert board obstacles
-    walls = set(self.board.find_all_positions('w'))
-    holes = set(self.board.find_all_positions('h'))
-    traps = set(self.board.find_all_positions('t'))
-    coins = set()
+    if not goal_state or not start_state:
+        print("❌ Missing agent or goal position on the board.")
+        return
 
-    # Initialize belief + state
-    init_belief_state = initialize_uniform_histogram_belief(grid_width, grid_height, traps)
-    init_true_state = MazeState(start_state[1], start_state[0], height=grid_height, width=grid_width, coins=coins)
+    walls = set((c, r) for r, c in self.board.find_all_positions('w'))
+    holes = set((c, r) for r, c in self.board.find_all_positions('h'))
+    traps = set((c, r) for r, c in self.board.find_all_positions('t'))
+    coins = set((c, r) for r, c in self.board.find_all_positions('c'))
 
-    # Create POMDP problem
-    problem = MazeProblem("pouct", goal_state, walls, holes, traps, coins,
-                          grid_width, grid_height, init_belief_state, init_true_state)
+    # --- Initialize belief + state ---
+    init_belief_state = initialize_uniform_belief(planner_name, grid_width, grid_height, coins)
+    init_true_state = MazeState(start_state[1], start_state[0],
+                                height=grid_height, width=grid_width, coins=coins)
 
-    # Simulation parameters
-    finishing_reward = 0
-    i = 0
+    reward_dict = self.get_rewards()
+    # --- Create POMDP problem ---
+    problem = MazeProblem(
+        planner_name=planner_name,
+        goal_state=goal_state,
+        solver_config=self.solver_config,
+        rewards=reward_dict,
+        walls=walls,
+        holes=holes,
+        traps=traps,
+        coins=coins,
+        grid_width=grid_width,
+        grid_height=grid_height,
+        init_belief=init_belief_state,
+        init_true_state=init_true_state,
+        move_probabilities=self.get_move_probabilites(),
+        observation_noises=self.get_observation_noise()
+    )
+
+    # --- Simulation setup ---
+    step_count = 0
     taken_actions = []
+    max_steps = grid_width * grid_height * 2  # prevent infinite loops
 
-    # Visualization helper
-    def print_grid(agent_state):
-        for y in range(grid_height):
-            row = ""
-            for x in range(grid_width):
-                if agent_state.x == x and agent_state.y == y:
-                    row += "A "
-                elif goal_state[0] == x and goal_state[1] == y:
-                    row += "G "
-                elif (x, y) in walls:
-                    row += "# "
-                elif (x, y) in traps:
-                    row += 'T '
-                elif (x, y) in coins:
-                    row += 'C '
-                else:
-                    row += ". "
-            print(row)
-        print()
+    current_state = problem.env.state
+    self.display_board()
+    self.root.update()
 
-    print_grid(problem.env.state, )
+    print("🟢 Initial board:")
+    self.print_console_grid(problem.env.state, goal_state, walls, traps, coins)
+    heatmap_window = None
+    if self.show_heatmap_var.get():
+        if not heatmap_window:
+            heatmap_window = TkinterHeatmapWindow(
+                grid_width=problem.width,
+                grid_height=problem.height,
+                walls=problem.walls,
+                traps=problem.traps,
+                coins=problem.coins,  # or empty set() if none
+                goal_position=problem.goal
+            )
+        heatmap_window.update(step_count, problem.get_current_belief_state(),
+                              (problem.env.state.x, problem.env.state.y))
 
-    # MAIN LOOP
-    while (problem.env.cur_state.x, problem.env.cur_state.y) != goal_state:
+    # --- Main loop ---
+    while (current_state.x, current_state.y) != goal_state and step_count < max_steps:
+        step_count += 1
         action: Action = problem.take_action()
         taken_actions.append(action.name)
-        i += 1
-
-        next_state = MazeState.get_next_state(problem.env.state, action)
-        problem.env.apply_transition(next_state)
-
-        real_observation = problem.observation_model.sample(next_state, action)
+        next_state = MazeState.get_next_state(current_state, action)
+        if (next_state.x, next_state.y) in problem.env.walls:
+            next_state = current_state
         reward = problem.reward_model.sample(problem.env.state, action, next_state)
+        rewards.append(reward)
 
-        # Update visualization
-        old_pos = (problem.env.state.y, problem.env.state.x)
-        new_pos = (next_state.y, next_state.x)
-        self.move_icon_xy(old_pos, new_pos)
+        # --- Move agent icon on GUI ---
+        from_xy = (current_state.x, current_state.y)
+        to_xy = (next_state.x, next_state.y)
+        self.move_icon_xy(from_xy, to_xy)
         self.root.update()
-        time.sleep(0.5)
+        time.sleep(0.2)
 
-        print(f"Step {i} | Action={action.name} | Reward={reward}")
-        print_grid(problem.env.state)
-        show_histogram(i,
-                       problem.get_current_belief_state(),
-                       problem.width,
-                       problem.height,
-                       problem.walls,
-                       problem.traps,
-                       problem.coins,
-                       (problem.env.state.x, problem.env.state.y),
-                       problem.goal)
+        # --- Apply transition + update belief ---
+        problem.env.apply_transition(next_state)
+        obs = problem.observation_model.sample(next_state, action)
+        problem.update_belief(action, obs)
+        current_state = next_state
 
-        problem.update_belief(action, real_observation)
-        finishing_reward = reward
+        print(f"Step {step_count} | Action={action.name} | Reward={reward}")
+        self.print_console_grid(problem.env.state, goal_state, walls, traps, coins)
 
-    print("✅ Reached goal! Actions:", taken_actions)
+        # Optional: show histogram of belief
+        if self.show_heatmap_var.get():
+            if not heatmap_window:
+                heatmap_window = TkinterHeatmapWindow(
+                    grid_width=problem.width,
+                    grid_height=problem.height,
+                    walls=problem.walls,
+                    traps=problem.traps,
+                    coins=problem.coins,  # or empty set() if none
+                    goal_position=problem.goal
+                )
+            heatmap_window.update(step_count, problem.get_current_belief_state(),
+                                  (problem.env.state.x, problem.env.state.y))
+
+    # --- End simulation ---
+    if (current_state.x, current_state.y) == goal_state:
+        discounted_total = calculate_discounted_reward(rewards, self.gamma)
+        total_reward = calculate_total_sum_reward(rewards)
+        print(f"🏁 Goal reached in {step_count} steps!")
+        print(f"Total reward sum: {total_reward}")
+        print(f"Discounted total reward: {discounted_total}")
+    else:
+        print(f"⚠ Simulation ended (max {max_steps} steps reached).")
+
+    print(f"Number of actions taken: {len(taken_actions)}")
+    print("Actions taken:", taken_actions)
+    plt.close('all')
+    plt.clf()
+    plt.cla()

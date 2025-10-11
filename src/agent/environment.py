@@ -15,6 +15,7 @@ class MazeEnvironment(pomdp_py.Environment):
                  walls: Set[Tuple[int, int]],
                  traps: Set[Tuple[int, int]],
                  holes: Set[Tuple[int, int]],
+                 coins: Set[Tuple[int, int]],
                  goal_state: Tuple[int, int],
                  transition_model: TransitionModel,
                  observation_model: ObservationModel,
@@ -22,9 +23,12 @@ class MazeEnvironment(pomdp_py.Environment):
                  noise: float = 0.15):
         self.width = width
         self.height = height
+
         self.walls = walls
         self.traps = traps
         self.holes = holes
+        self.coins = coins
+
         self.noise = noise
         self.goal_state = goal_state
         self.observation_model = observation_model

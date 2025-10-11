@@ -113,4 +113,4 @@ class TransitionModel(pomdp_py.TransitionModel):
             return MazeState(cx, cy, height=self.height, width=self.width, coins=new_coins)
         else:
             # Blocked - stay in place
-            return state
+            return MazeState(x, y, height=self.height, width=self.width, coins=state.coins)

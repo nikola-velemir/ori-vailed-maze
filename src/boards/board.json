@@ -31,10 +31,6 @@
 
   "traps": {
     "positions": [
-      [2, 3],
-      [2, 4],
-      [1, 3],
-      [1, 4]
     ],
     "penalty": -50,
     "terminal": false
@@ -42,6 +38,14 @@
 
   "rewards": {
     "step": -1
+  },
+  "coins": {
+    "positions": [
+      [4,6],
+
+      [2,4]
+    ],
+    "reward": 100
   },
   "move_probabilities": {
     "intended": 0.8,
@@ -56,7 +60,7 @@
 
   "solver_config": {
     "max_depth": 25,
-    "discount_factor": 0.9,
+    "discount_factor": 0.3,
     "exploration_const": 100,
     "num_sims": 10000
   }
