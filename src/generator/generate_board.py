@@ -1,9 +1,8 @@
 import json
 import random
-import uuid
 
 
-def generate_board_from_config(config, seed=None):
+def generate_board_from_config(config, seed=None, board_id=None):
     """
     Generate a board based on a configuration dictionary
 
@@ -41,7 +40,6 @@ def generate_board_from_config(config, seed=None):
     while goal == agent:
         goal = rand_pos()
 
-    # Utility to generate random positions avoiding occupied cells
     def random_positions(count, exclude=None):
         exclude = exclude or set()
         positions = set()
@@ -68,8 +66,14 @@ def generate_board_from_config(config, seed=None):
     coins = random_positions(coin_count, occupied)
     occupied.update(map(tuple, coins))
 
-    unique_id = str(uuid.uuid4())
-    filename = f"board_{unique_id}.json"
+    if board_id is not None:
+        unique_id = board_id
+    elif seed is not None:
+        unique_id = seed
+    else:
+        unique_id = 0
+
+    filename = f"board_{unique_id:04d}.json"
 
     board = {
         "width": width,

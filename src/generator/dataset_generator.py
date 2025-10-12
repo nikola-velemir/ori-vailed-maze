@@ -1,9 +1,8 @@
 import os
 import json
+import hashlib
 
 from src.generator.generate_board import generate_board_from_config
-
-
 
 
 def generate_dataset_split(
@@ -25,24 +24,30 @@ def generate_dataset_split(
     os.makedirs(output_dir, exist_ok=True)
     index = {}
 
+    with open("config.json", "r") as f:
+        config = json.load(f)
+
     for split, count in splits.items():
         split_dir = os.path.join(output_dir, split)
         os.makedirs(split_dir, exist_ok=True)
         print(f"\n📁 Generating {count} boards for {split}/ ...")
 
         created_files = []
-        config = None
-        with open("config.json", "r") as f:
-            config = json.load(f)
+
         for i in range(count):
-            # Use different seed offsets for reproducibility
-            board_seed = seed + i + (hash(split) % 1000)
+            split_hash = int(hashlib.md5(split.encode()).hexdigest(), 16) % 1000
+            board_seed = seed + i + split_hash
+
             prev_dir = os.getcwd()
             os.chdir(split_dir)
-            filename = generate_board_from_config(config, seed=board_seed)
-            os.chdir(prev_dir)
-            created_files.append(filename)
-            print(f"  ✅ [{i + 1}/{count}] {filename}")
+
+            try:
+                filename = generate_board_from_config(config, seed=board_seed, board_id=i)
+            finally:
+                os.chdir(prev_dir)
+
+            created_files.append(os.path.basename(filename))
+            print(f"  ✅ [{i + 1}/{count}] {os.path.basename(filename)}")
 
         index[split] = created_files
 
@@ -56,5 +61,4 @@ def generate_dataset_split(
 
 
 if __name__ == "__main__":
-    # Example: generate 100 train, 20 val, 20 test boards
-    generate_dataset_split(train_size=80, val_size=20, test_size=20)
+    generate_dataset_split(train_size=60, val_size=20, test_size=20)

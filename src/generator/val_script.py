@@ -9,14 +9,14 @@ from src.generator.utils import display_summary
 
 if __name__ == "__main__":
     results = []
-    for episode, file in enumerate(glob.glob("dataset/train/*.json"), start=1):
+    for episode, file in enumerate(glob.glob("dataset/val/*.json"), start=1):
         print(f"{episode}. Episode")
         res = run_training(file, headless=True)
         results.append(res)
 
     df = pd.DataFrame(results)
-    file_name = f'training_data_{time.time()}.csv'
-    output = os.path.join("results", 'train', file_name)
+    file_name = f'val_data_{time.time()}.csv'
+    output = os.path.join("results", 'val', file_name)
     df.to_csv(output, index=False)
 
     display_summary(df=df)
