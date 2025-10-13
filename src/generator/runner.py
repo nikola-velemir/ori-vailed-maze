@@ -102,11 +102,10 @@ def run_training(test_file: str, headless: bool = False):
         'file': test_file,
         "total_reward": calculate_total_sum_reward(rewards),
         "discounted_reward": calculate_discounted_reward(rewards),
-        "steps": step_count,
         "path_length": path_length,
         "actions": taken_actions,
-        "reached_goal":reached_goal
-
+        "reached_goal": reached_goal,
+        'maze_size': f'{data['width']}x{data['height']}',
     }
 
 
@@ -138,7 +137,6 @@ def get_move_probabilites(data):
 def print_console_grid(grid_width, grid_height, agent_state, goal_state, walls, traps, coins, headless=False):
     if headless:
         return
-    """Prints a simple ASCII grid showing agent, goal, and obstacles."""
     print()
     for y in range(grid_height):
         row = ""

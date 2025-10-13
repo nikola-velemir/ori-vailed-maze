@@ -14,6 +14,7 @@ if __name__ == "__main__":
         res = run_training(file, headless=True)
         results.append(res)
 
+    print(results)
     df = pd.DataFrame(results)
     file_name = f'test_data_{time.time()}.csv'
     output = os.path.join("results", 'test', file_name)

@@ -39,7 +39,7 @@ class ObservationModel(pomdp_py.ObservationModel):
         }
 
     def sample(self, next_state: MazeState, action: Action) -> Observation:
-        """Sample observation - only what the agent senses, no position info"""
+        """Sample observation - only what the agent senses"""
 
         sensed = {}
         for dir_name, (dx, dy) in self.directions.items():
@@ -73,7 +73,6 @@ class ObservationModel(pomdp_py.ObservationModel):
         )
 
     def _sense_direction(self, state: MazeState, dx: int, dy: int) -> str:
-        """What's actually in this direction?"""
         nx, ny = state.x + dx, state.y + dy
 
         # Out of bounds
@@ -95,7 +94,7 @@ class ObservationModel(pomdp_py.ObservationModel):
         return 'clear'
 
     def probability(self, observation: Observation, next_state: MazeState, action: Action) -> float:
-        """Calculate P(o | s', a) - only based on directional sensing"""
+        """Calculate P(o | s', a) only based on directional sensing"""
         prob = 1.0
 
         # Only directional sensing probability matters now

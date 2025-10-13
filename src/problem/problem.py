@@ -10,12 +10,11 @@ from src.models.observation_model import ObservationModel
 from src.domain.maze_state import MazeState
 from src.models.reward_model import RewardModel
 from src.models.transition_model import TransitionModel
-from src.models.policy_model import PolicyModel  # assuming you have this
+from src.models.policy_model import PolicyModel
 from src.solver.factory import PlannerFactory
 
 
 class MazeProblem(pomdp_py.POMDP):
-    """Complete POMDP problem definition for a grid world"""
 
     def __init__(self,
                  planner_name: str,

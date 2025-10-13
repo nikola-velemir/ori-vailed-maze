@@ -13,14 +13,13 @@ class TransitionModel(pomdp_py.TransitionModel):
                  width: int, height: int,
                  walls: Set[Tuple[int, int]] = None,
                  coins: Set[Tuple[int, int]] = None,
-                 move_probabilities: dict = None,  # Changed from 'noise'
+                 move_probabilities: dict = None,
                  epsilon: float = 1e-4):
         self.width = width
         self.height = height
         self.walls = walls if walls else set()
         self.coins = coins if coins else set()
 
-        # Default to your JSON values
         self.move_probs = move_probabilities or {
             'intended': 0.8,
             'left_slip': 0.1,
@@ -28,9 +27,8 @@ class TransitionModel(pomdp_py.TransitionModel):
         }
         self.epsilon = epsilon
 
-        # Define perpendicular directions for slipping
         self.perpendiculars = {
-            Action.UP: (Action.LEFT, Action.RIGHT),  # left, right
+            Action.UP: (Action.LEFT, Action.RIGHT),
             Action.DOWN: (Action.RIGHT, Action.LEFT),
             Action.RIGHT: (Action.UP, Action.DOWN),
             Action.LEFT: (Action.DOWN, Action.UP)
@@ -38,10 +36,10 @@ class TransitionModel(pomdp_py.TransitionModel):
 
     def probability(self, next_state: MazeState, state: MazeState, action: Action) -> float:
         """Returns P(s' | s, a)"""
-        # Get all three possible outcomes
+
         outcomes = self._get_action_outcomes(state, action)
 
-        # Check if next_state matches any outcome
+
         for outcome_state, prob in outcomes:
             if (next_state.x == outcome_state.x and
                     next_state.y == outcome_state.y and
@@ -62,8 +60,7 @@ class TransitionModel(pomdp_py.TransitionModel):
 
     def _get_action_outcomes(self, state: MazeState, action: Action):
         """
-        Returns list of (MazeState, probability) tuples for the three
-        possible outcomes: intended direction, left slip, right slip
+        Returns list of (MazeState, probability) tuples for the three possible outcomes: intended direction, left slip, right slip
         """
         outcomes = []
 
@@ -84,8 +81,7 @@ class TransitionModel(pomdp_py.TransitionModel):
 
     def _apply_action(self, state: MazeState, action: Action) -> MazeState:
         """
-        Apply action to state. If move is blocked (wall/boundary),
-        agent stays in place.
+        Apply action to state. If move is blocked (wall/boundary), agent stays in place.
         """
         x, y = state.x, state.y
 
