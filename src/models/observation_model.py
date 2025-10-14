@@ -97,7 +97,6 @@ class ObservationModel(pomdp_py.ObservationModel):
         """Calculate P(o | s', a) only based on directional sensing"""
         prob = 1.0
 
-        # Only directional sensing probability matters now
         for dir_name, (dx, dy) in self.directions.items():
             true_content = self._sense_direction(next_state, dx, dy)
             observed_content = getattr(observation, dir_name)
