@@ -5,7 +5,7 @@ class Observation(pomdp_py.Observation):
     def __init__(self, north=None, south=None, east=None, west=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # What agent senses in each direction
-        self.north = north  # 'clear', 'wall', 'trap', 'goal'
+        self.north = north  # 'clear', 'wall', 'trap', 'goal','hole'
         self.south = south
         self.east = east
         self.west = west
