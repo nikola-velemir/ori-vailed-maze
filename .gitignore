@@ -5,6 +5,9 @@ __pycache__/
 
 # C extensions
 *.so
+src/**/dataset/*
+src/generator/config.json
+!src/**/dataset/.gitkeep
 
 # Distribution / packaging
 .Python
@@ -150,6 +153,7 @@ venv.bak/
 
 # Rope project settings
 .ropeproject
+*.csv
 
 # mkdocs documentation
 /site

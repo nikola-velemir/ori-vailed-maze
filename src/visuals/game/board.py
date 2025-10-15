@@ -21,11 +21,6 @@ board_to_icons = {
 
 
 class Board:
-    """
-    Class that implements a game board using a JSON-like dictionary.
-    Supports agent, goal, walls, holes, traps, and POMDP rewards.
-    NOTE: Board uses (y, x) indexing where y=row, x=col
-    """
 
     def __init__(self, data_dict=None, rows=None, cols=None):
         self.elems = ['.', 'w', 'a', 'g', 'h', 't']
