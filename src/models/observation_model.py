@@ -31,6 +31,8 @@ class ObservationModel(pomdp_py.ObservationModel):
         self.sensor_failure = sensor_failure
         self.epsilon = epsilon
 
+        self.possible_readings = ['clear','wall','something','coin','danger']
+
         self.directions = {
             'north': (0, -1),
             'south': (0, 1),
@@ -51,7 +53,7 @@ class ObservationModel(pomdp_py.ObservationModel):
 
                 if random.random() < self.sensor_noise:
                     # Wrong reading
-                    sensed[dir_name] = random.choice(['clear', 'wall', 'something', 'coin', 'danger'])
+                    sensed[dir_name] = random.choice(self.possible_readings)
                 else:
                     # Generic "something"
                     if true_content in ['trap', 'goal']:
@@ -112,7 +114,7 @@ class ObservationModel(pomdp_py.ObservationModel):
                     expected = 'something'
                 elif true_content == 'coin':
                     expected = 'coin'
-                elif true_content == 'hole' or true_content == 'danger':
+                elif true_content == 'hole':
                     expected = 'danger'
                 else:
                     expected = true_content
@@ -120,7 +122,7 @@ class ObservationModel(pomdp_py.ObservationModel):
                 if observed_content == expected:
                     prob *= (1 - self.sensor_noise)
                 else:
-                    prob *= self.sensor_noise / 5
+                    prob *= self.sensor_noise / (len(self.possible_readings)-1)
 
         return max(prob, self.epsilon)
 

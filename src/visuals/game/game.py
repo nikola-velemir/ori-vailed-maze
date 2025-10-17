@@ -178,6 +178,7 @@ class Game:
         if filename:  # If user selected a file (didn't cancel)
             try:
                 # Parse the new board file
+                self.board_file = filename
                 self.board_data = BoardParser.parse(board_file_path=filename)
                 self.solver_config = self.board_data['solver_config']
                 self.gamma = self.solver_config['discount_factor']
