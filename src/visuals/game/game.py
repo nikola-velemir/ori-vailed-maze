@@ -84,13 +84,11 @@ class Game:
         planner_dropdown.grid(row=1, column=0, padx=10, pady=10)
 
         restart_button = tk.Button(self.ui, text='RESET', width=10, command=self.reset)
-        debug_button = tk.Button(self.ui, text='DEBUG', width=10, command=self.debug)
 
         pouct_button = tk.Button(self.ui, text='RUN POMDP', width=10, command=self.run_simulation)
         pouct_button.grid(row=5, column=0, padx=10, pady=10)
 
         restart_button.grid(row=3, column=0, padx=10, pady=10)
-        debug_button.grid(row=4, column=0, padx=10, pady=10)
 
         self.show_heatmap_var = tk.BooleanVar(value=True)
         heatmap_checkbox = tk.Checkbutton(
@@ -312,7 +310,6 @@ class Game:
     def move_icon_xy(self, from_xy, to_xy):
         self.move_icon((from_xy[1], from_xy[0]), (to_xy[1], to_xy[0]))
 
-    # ---------------- Debug ----------------
     def move_icon(self, from_position, to_position, has_box=None):
         f = self.board.data[from_position[0]][from_position[1]]
         t = self.board.data[to_position[0]][to_position[1]]
@@ -332,12 +329,6 @@ class Game:
         self.update_board(to_position[0], to_position[1])
         self.root.update()
 
-    def debug(self):
-        self.reset()
-        position = self.board.find_position('a')
-        for idx, p in enumerate(self.processed):
-            self.move_icon(position, p.position, hasattr(p, 'has_box') and p.has_box)
-            position = p.position
 
     def reset(self):
         """Resets the board"""
