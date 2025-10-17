@@ -9,6 +9,7 @@ from src.generator.utils import display_summary
 
 if __name__ == "__main__":
     results = []
+    print("Running validation")
     for episode, file in enumerate(glob.glob("dataset/val/*.json"), start=1):
         print(f"{episode}. Episode")
         res = run_training(file, headless=True)

@@ -1,4 +1,5 @@
 import os.path
+import uuid
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -293,7 +294,11 @@ def run_statistics(df):
     visualize_success_rate_by_path_range(df)
 
     plt.tight_layout()
-    file_path = os.path.join('statistics','maze_performance_evaluation.png')
+    file_dir = os.path.join('statistics','results')
+    if not os.path.exists(file_dir):
+        os.makedirs(file_dir)
+    file_id = uuid.uuid4()
+    file_path = os.path.join(file_dir,f'maze_performance_evaluation_{file_id}.png')
     plt.savefig(file_path, dpi=300, bbox_inches='tight')
     print(f"\n✓ Visualization saved as 'maze_performance_evaluation.png'")
     plt.show()

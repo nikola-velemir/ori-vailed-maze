@@ -6,7 +6,7 @@ from src.generator.generate_board import generate_board_from_config
 
 
 def generate_dataset_split(
-        train_size=100,
+        train_size=60,
         val_size=20,
         test_size=20,
         width=8,
