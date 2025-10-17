@@ -58,6 +58,9 @@ class Game:
         self.ui = tk.Frame(self.root, bg='white')
         self.ui2 = tk.Frame(self.root, bg='white')
 
+        # Move history data
+        self.move_history = []
+
         # Canvas
         self.canvas = tk.Canvas(self.root,
                                 width=self.cols * self.cell_size + 1,
@@ -82,20 +85,13 @@ class Game:
 
         restart_button = tk.Button(self.ui, text='RESET', width=10, command=self.reset)
         debug_button = tk.Button(self.ui, text='DEBUG', width=10, command=self.debug)
-        stat_report = tk.Label(self.root, text='      ', bg='white', justify=tk.LEFT, relief=tk.GROOVE,
-                               font=tkFont.Font(weight='bold'))
+
         pouct_button = tk.Button(self.ui, text='RUN POMDP', width=10, command=self.run_simulation)
         pouct_button.grid(row=5, column=0, padx=10, pady=10)
 
         restart_button.grid(row=3, column=0, padx=10, pady=10)
         debug_button.grid(row=4, column=0, padx=10, pady=10)
-        stat_report.pack(side=tk.RIGHT, expand=tk.NO, fill=tk.NONE)
 
-        # Display board
-        self.display_board()
-        self.ui.pack(side=tk.RIGHT, expand=tk.YES, fill=tk.BOTH)
-        self.canvas.pack(side=tk.TOP, expand=tk.YES, fill=tk.BOTH)
-        self.ui2.pack(side=tk.LEFT, expand=tk.YES, fill=tk.BOTH, anchor=tk.W)
         self.show_heatmap_var = tk.BooleanVar(value=True)
         heatmap_checkbox = tk.Checkbutton(
             self.ui,
@@ -106,6 +102,45 @@ class Game:
             bg='white'
         )
         heatmap_checkbox.grid(row=6, column=0, padx=10, pady=5)
+
+        # Move history frame with scrollbar - using grid
+        self.history_frame = tk.Frame(self.ui, bg='white', relief=tk.GROOVE, borderwidth=2)
+        self.history_frame.grid(row=7, column=0, padx=10, pady=10, sticky='nsew')
+
+        self.history_label = tk.Label(self.history_frame, text="Move History", bg='white',
+                                      font=tkFont.Font(weight='bold'))
+        self.history_label.pack(side=tk.TOP, pady=5)
+
+        # Create canvas and scrollbar for history
+        self.history_canvas = tk.Canvas(self.history_frame, width=230, height=300, bg='white', highlightthickness=0)
+        self.history_scrollbar = tk.Scrollbar(self.history_frame, orient="vertical", command=self.history_canvas.yview)
+        self.history_scrollable_frame = tk.Frame(self.history_canvas, bg='white')
+
+        self.history_scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.history_canvas.configure(scrollregion=self.history_canvas.bbox("all"))
+        )
+
+        self.history_canvas.create_window((0, 0), window=self.history_scrollable_frame, anchor="nw")
+        self.history_canvas.configure(yscrollcommand=self.history_scrollbar.set)
+
+        self.history_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.history_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Display board
+        self.display_board()
+
+        stat_report = tk.Label(self.root, text='      ', bg='white', justify=tk.LEFT, relief=tk.GROOVE,
+                               font=tkFont.Font(weight='bold'))
+
+        self.ui.grid(row=0, column=1, sticky='ns', padx=5, pady=5)
+        self.canvas.grid(row=0, column=0, sticky='nsew', padx=5, pady=5)
+        self.ui2.grid(row=1, column=0, columnspan=2, sticky='ew')
+        stat_report.grid(row=2, column=0, columnspan=2, sticky='ew')
+
+        # Configure grid weights for resizing
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
         self.processed = None
         self.path = None
 
@@ -175,6 +210,7 @@ class Game:
 
         # Optional: Bind keyboard shortcut
         win.bind('<Control-o>', lambda e: self.open_file())
+
     # ---------------- Board Display ----------------
     def reload_board(self):
         """Reload the last loaded board file."""
@@ -272,7 +308,6 @@ class Game:
             self.grid_text_ids[row][col] = []
             self.board.text[row][col] = ''
 
-
     def move_icon_xy(self, from_xy, to_xy):
         self.move_icon((from_xy[1], from_xy[0]), (to_xy[1], to_xy[0]))
 
@@ -303,8 +338,6 @@ class Game:
             self.move_icon(position, p.position, hasattr(p, 'has_box') and p.has_box)
             position = p.position
 
-
-
     def reset(self):
         """Resets the board"""
         self.load_board_from_dict(self.original_board)
@@ -312,6 +345,7 @@ class Game:
             for col in range(self.cols):
                 self.delete_texts(row, col)
         self.display_board()
+        self.clear_move_history()
 
     def run_simulation(self):
         """Runs the simulation in friend function"""
@@ -337,6 +371,7 @@ class Game:
                     row += ". "
             print(row)
         print()
+
     def get_rewards(self):
         """Extracts rewards from board data."""
         data = self.board_data
@@ -347,14 +382,58 @@ class Game:
         goal_reward = data['goal']['reward']
         coins_reward = data['coins']['reward']
         return {
-            'hole_penalty':hole_penalty,
-            'trap_penalty':trap_penalty,
-            'step_cost':step_cost,
-            'wall_penalty':wall_penalty,
-            'goal_reward':goal_reward,
-            'coin_reward':coins_reward,
+            'hole_penalty': hole_penalty,
+            'trap_penalty': trap_penalty,
+            'step_cost': step_cost,
+            'wall_penalty': wall_penalty,
+            'goal_reward': goal_reward,
+            'coin_reward': coins_reward,
         }
+
     def get_observation_noise(self):
         return self.board_data['observation_noise']
+
     def get_move_probabilites(self):
         return self.board_data['move_probabilities']
+
+    def add_move_to_history(self, action, start_pos, end_pos, reward):
+        """Adds a move record to the history display."""
+        move_num = len(self.move_history) + 1
+        self.move_history.append({
+            'action': action,
+            'start': start_pos,
+            'end': end_pos,
+            'reward': reward
+        })
+
+        # Create move entry
+        move_frame = tk.Frame(self.history_scrollable_frame, bg='lightgray', relief=tk.RAISED, borderwidth=1)
+        move_frame.pack(fill=tk.X, padx=5, pady=3)
+
+        # Move number
+        tk.Label(move_frame, text=f"Move {move_num}", bg='lightgray', font=tkFont.Font(weight='bold')).pack(anchor=tk.W,
+                                                                                                            padx=5,
+                                                                                                            pady=2)
+
+        # Action
+        tk.Label(move_frame, text=f"Action: {action}", bg='lightgray').pack(anchor=tk.W, padx=5)
+
+        # Positions
+        tk.Label(move_frame, text=f"From: ({start_pos[0]}, {start_pos[1]})", bg='lightgray').pack(anchor=tk.W, padx=5)
+        tk.Label(move_frame, text=f"To: ({end_pos[0]}, {end_pos[1]})", bg='lightgray').pack(anchor=tk.W, padx=5)
+
+        # Reward with color coding
+        reward_color = 'green' if reward > 0 else 'red' if reward < 0 else 'black'
+        reward_label = tk.Label(move_frame, text=f"Reward: {reward:.2f}", bg='lightgray', fg=reward_color,
+                                font=tkFont.Font(weight='bold'))
+        reward_label.pack(anchor=tk.W, padx=5, pady=2)
+
+        # Auto-scroll to bottom
+        self.history_canvas.update_idletasks()
+        self.history_canvas.yview_moveto(1.0)
+
+    def clear_move_history(self):
+        """Clears all move history entries."""
+        self.move_history = []
+        for widget in self.history_scrollable_frame.winfo_children():
+            widget.destroy()

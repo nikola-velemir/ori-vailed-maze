@@ -13,5 +13,5 @@
     "step_reward": -1,
     "move_probabilities": {"intended": 0.8, "left_slip": 0.1, "right_slip": 0.1},
     "observation_noise": {"sensor_noise": 0.3, "sensor_failure": 0.1},
-    "solver_config": {"max_depth": 40, "discount_factor": 0.95, "exploration_const": 90, "num_sims": 2000}
+    "solver_config": {"max_depth": 10, "discount_factor": 0.8, "exploration_const": 90, "num_sims": 2000}
 }

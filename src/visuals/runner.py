@@ -94,6 +94,8 @@ def run_pomdp_simulation(self):
             next_state = current_state
         reward = problem.reward_model.sample(problem.env.state, action, next_state)
         rewards.append(reward)
+        (old_state_x, old_state_y) = current_state.x, current_state.y
+        (new_state_x, new_state_y) = next_state.x, next_state.y
 
         # --- Move agent icon on GUI ---
         from_xy = (current_state.x, current_state.y)
@@ -124,6 +126,7 @@ def run_pomdp_simulation(self):
                 )
             heatmap_window.update(step_count, problem.get_current_belief_state(),
                                   (problem.env.state.x, problem.env.state.y))
+        self.add_move_to_history(action.name, (old_state_x,old_state_y),(new_state_x,new_state_y), reward)
 
     path_length = calculate_path_length(taken_actions)
     # --- End simulation ---
