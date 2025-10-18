@@ -25,6 +25,8 @@ def run_pomdp_simulation(self):
     goal_state = (c, r)
     c, r = self.board.find_position('a')
     start_state = (c, r)
+    if planner_name.lower() =='pomcp':
+        planner_name = 'pouct'
 
     if not goal_state or not start_state:
         print("❌ Missing agent or goal position on the board.")
