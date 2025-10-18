@@ -5,6 +5,9 @@ __pycache__/
 
 # C extensions
 *.so
+src/**/dataset/*
+src/generator/config.json
+!src/**/dataset/.gitkeep
 
 # Distribution / packaging
 .Python
@@ -150,6 +153,7 @@ venv.bak/
 
 # Rope project settings
 .ropeproject
+*.csv
 
 # mkdocs documentation
 /site
@@ -177,7 +181,7 @@ cython_debug/
 
 # Abstra
 # Abstra is an AI-powered process automation framework.
-# Ignore directories containing user credentials, local state, and settings.
+# Ignore directories containing user credentials, local models, and settings.
 # Learn more at https://abstra.io/docs
 .abstra/
 
