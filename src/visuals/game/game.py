@@ -253,7 +253,6 @@ class Game:
         else:
             self.delete_texts(row, col)
 
-    # ---------------- Canvas Drawing ----------------
     def get_cell_rectangle(self, row, col):
         return col * self.cell_size, row * self.cell_size, (col + 1) * self.cell_size, (row + 1) * self.cell_size
 
@@ -279,7 +278,7 @@ class Game:
         self.canvas.icons[elem_id] = icon
         self.save_elem_id(elem_id, row, col)
 
-    # ---------------- ID Tracking ----------------
+
     def save_elem_id(self, elem_id, row, col):
         if len(self.grid_elem_ids[row][col]) == 0:
             self.grid_elem_ids[row][col] = []

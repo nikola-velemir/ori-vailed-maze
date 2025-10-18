@@ -116,7 +116,7 @@ class Board:
             self.data[y][x] = 't'
 
     def to_dict(self):
-        """Return a JSON-like dictionary representing the current board."""
+        """Return a JSON dictionary representing the current board."""
         return {
             "width": self.cols,
             "height": self.rows,
@@ -149,7 +149,7 @@ class Board:
                 self.text[row][col] = ''
 
     def find_position(self, element):
-        """Find first occurrence of element. Returns (y, x) where y=row, x=col."""
+        """Find first occurrence of element"""
         for x in range(self.rows):
             for y in range(self.cols):
                 cell = self.data[y][x]
@@ -160,7 +160,7 @@ class Board:
         return None
 
     def find_all_positions(self, element):
-        """Find all occurrences of element. Returns list of (y, x) where y=row, x=col."""
+        """Find all occurrences of element"""
         positions = []
         for y in range(self.rows):
             for x in range(self.cols):
